@@ -1,0 +1,83 @@
+# Central Infrastructure - Reverse Proxy & Shared Services
+# Manages all *.francony.fr subdomains
+#
+# Structure on Pi:
+#   ~/infra/           <- this repo
+#   ~/bartending/      <- Tipsy app
+#   ~/MTG-Collection/  <- MTG app
+#
+# Usage:
+#   cd ~/infra
+#   docker compose up -d
+
+services:
+  # ============================================
+  # NGINX - Central Reverse Proxy
+  # ============================================
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites:/etc/nginx/sites:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./admin:/usr/share/nginx/admin:ro
+    networks:
+      - proxy-network
+      - bartending_network
+      - mtg_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ============================================
+  # CERTBOT - SSL Certificate Management
+  # ============================================
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # ============================================
+  # UPTIME KUMA - Status Monitoring
+  # ============================================
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - proxy-network
+
+  # ============================================
+  # DOZZLE - Log Viewer
+  # ============================================
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy-network
+
+volumes:
+  uptime_kuma_data:
+
+networks:
+  proxy-network:
+    name: proxy-network
+    driver: bridge
+  # External networks from other apps
+  bartending_network:
+    external: true
+  mtg_network:
+    external: true
