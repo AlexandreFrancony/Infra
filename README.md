@@ -1,86 +1,164 @@
 # Francony Infrastructure
 
-Central reverse proxy, auto-deployment, and shared services for all *.francony.fr applications.
+Central reverse proxy, auto-deployment webhook, SSL certificates, and shared services for all *.francony.fr applications.
 
-## Architecture
+[![Admin](https://img.shields.io/badge/admin-admin.francony.fr-blue)](https://admin.francony.fr)
 
-```
-[Internet] → [nginx-proxy:80/443] → [Apps]
-                    │
-                    ├── admin.francony.fr    → Static dashboard
-                    ├── tipsy.francony.fr    → Bartending app (bartending_network)
-                    ├── mtg.francony.fr      → MTG Collection (mtg_network)
-                    ├── status.francony.fr   → Uptime Kuma
-                    ├── logs.francony.fr     → Dozzle
-                    └── webhook.francony.fr  → Auto-deployment webhook
-
-[GitHub] → webhook.francony.fr → deploy.sh → docker compose up
-```
-
-## Directory Structure on Raspberry Pi
+## Architecture Overview
 
 ```
-~/Hosting/
-├── Infra/                  ← This repo (central proxy + webhook)
-│   ├── nginx/
-│   ├── certbot/
-│   └── webhook-server/
-├── Bartending/             ← Tipsy app
-│   ├── Bartending_DB/
-│   ├── Bartending_Back/
-│   ├── Bartending_Front/
-│   └── Bartending_Deploy/
-└── MTG-Collection/         ← MTG app
+                              ┌─────────────────────────────────────────┐
+                              │            Raspberry Pi 4                │
+    ┌──────────┐              ├─────────────────────────────────────────┤
+    │  GitHub  │──webhook──►  │  ┌─────────────────────────────────┐    │
+    └──────────┘              │  │     Central Infrastructure        │    │
+                              │  │  ┌───────────────────────────┐   │    │
+    ┌──────────┐              │  │  │    nginx-proxy :80/443    │   │    │
+    │ Internet │──HTTPS────►  │  │  │    (SSL termination)      │   │    │
+    └──────────┘              │  │  └─────────┬─────────────────┘   │    │
+                              │  │            │                      │    │
+                              │  │  ┌─────────┼─────────────────┐   │    │
+                              │  │  │         │                 │   │    │
+                              │  │  ▼         ▼                 ▼   │    │
+                              │  │ ┌───┐   ┌───┐   ┌───┐   ┌───┐   │    │
+                              │  │ │Tip│   │MTG│   │Sta│   │Log│   │    │
+                              │  │ │sy │   │   │   │tus│   │s  │   │    │
+                              │  │ └───┘   └───┘   └───┘   └───┘   │    │
+                              │  │                                  │    │
+                              │  │  webhook-server :9000            │    │
+                              │  │  (auto-deployment)               │    │
+                              │  └─────────────────────────────────┘    │
+                              └─────────────────────────────────────────┘
 ```
 
 ## Services
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Admin | https://admin.francony.fr | Central dashboard |
-| Tipsy | https://tipsy.francony.fr | Bartending app |
-| MTG | https://mtg.francony.fr | Card collection tracker |
-| Status | https://status.francony.fr | Uptime monitoring |
-| Logs | https://logs.francony.fr | Container logs viewer |
-| Webhook | https://webhook.francony.fr | GitHub webhook receiver |
+| Domain | Service | Description |
+|--------|---------|-------------|
+| `admin.francony.fr` | Admin Dashboard | Central control panel with system stats |
+| `tipsy.francony.fr` | Tipsy | Cocktail ordering application |
+| `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
+| `status.francony.fr` | Uptime Kuma | Uptime monitoring dashboard |
+| `logs.francony.fr` | Dozzle | Docker container log viewer |
+| `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
+
+## Admin Dashboard
+
+The admin dashboard (`admin.francony.fr`) provides:
+
+- **System Monitoring**: CPU, RAM, Disk usage, Temperature
+- **Docker Status**: All containers with health status
+- **SSL Certificates**: Expiry tracking for all domains
+- **Quick Links**: Access to all services
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/system` | CPU, RAM, Disk, Temperature, Uptime |
+| `/api/docker` | Docker container status |
+| `/api/ssl` | SSL certificate expiry info |
+
+## Directory Structure
+
+```
+~/Hosting/                      # On Raspberry Pi
+├── Infra/                      # This repo (central proxy + webhook)
+│   ├── nginx/
+│   │   └── nginx.conf          # Main proxy configuration
+│   ├── certbot/
+│   │   └── conf/               # Let's Encrypt certificates
+│   ├── admin/
+│   │   └── index.html          # Admin dashboard (static)
+│   ├── webhook-server/
+│   │   ├── server.py           # Flask webhook + monitoring API
+│   │   ├── deploy.sh           # Deployment script
+│   │   ├── projects/           # Project configs (YAML)
+│   │   └── Dockerfile
+│   └── docker-compose.yml
+├── Bartending/                 # Tipsy app (4 repos)
+│   ├── Bartending_DB/
+│   ├── Bartending_Back/
+│   ├── Bartending_Front/
+│   └── Bartending_Deploy/
+└── MTG-Collection/             # MTG app (1 repo)
+```
+
+## Docker Stack
+
+| Service | Port | Network | Description |
+|---------|------|---------|-------------|
+| `nginx-proxy` | 80, 443 | proxy-network + app networks | Central reverse proxy |
+| `webhook-server` | 9000 (internal) | proxy-network | GitHub webhook receiver |
+| `uptime-kuma` | 3001 (internal) | proxy-network | Uptime monitoring |
+| `dozzle` | 8080 (internal) | proxy-network | Docker log viewer |
+| `certbot` | - | - | SSL certificate renewal |
 
 ## Auto-Deployment
 
-The webhook server automatically deploys apps when you push to GitHub:
+### How it Works
 
-1. **Configure GitHub Webhook** on each repo:
-   - URL: `https://webhook.francony.fr/deploy`
-   - Content type: `application/json`
-   - Secret: (same as `WEBHOOK_SECRET` in `.env`)
-   - Events: Just the push event
+1. Push code to GitHub (main/prod branch)
+2. GitHub sends webhook to `webhook.francony.fr/deploy`
+3. Webhook server verifies signature and identifies project
+4. Runs project's `deploy.sh` script
+5. Docker containers are rebuilt and restarted
 
-2. **Project Configs** are in `webhook-server/projects/`:
-   - `bartending.yml` - Tipsy app (4 repos)
-   - `mtg.yml` - MTG Collection (1 repo)
+### Project Configuration
 
-3. **Add new projects** by creating a new YAML file:
-   ```yaml
-   name: My-Project
-   path: My-Project
-   branch:
-     - main
-   repos:
-     - My-Project
-   ```
+Projects are configured via YAML files in `webhook-server/projects/`:
+
+**bartending.yml**
+```yaml
+name: Bartending
+path: Bartending/Bartending_Deploy
+branch:
+  - main
+  - prod
+repos:
+  - Bartending_DB
+  - Bartending_Back
+  - Bartending_Front
+  - Bartending_Deploy
+```
+
+**mtg.yml**
+```yaml
+name: MTG-Collection
+path: MTG-Collection
+branch:
+  - main
+repos:
+  - MTG-Collection
+```
+
+### Webhook Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/health` | GET | None | Health check |
+| `/projects` | GET | None | List configured projects |
+| `/status` | GET | None | Deployment lock status |
+| `/deploy` | POST | HMAC-SHA256 | GitHub webhook receiver |
+| `/reload-config` | POST | None | Reload project configs |
 
 ## First Time Setup
 
-### 1. Clone all repos
+### 1. Clone Repositories
 
 ```bash
 mkdir -p ~/Hosting
 cd ~/Hosting
+
+# Central infrastructure
 git clone https://github.com/AlexandreFrancony/Infra.git
+
+# Applications
 git clone https://github.com/AlexandreFrancony/MTG-Collection.git
-# Clone Bartending repos...
+# ... clone Bartending repos
 ```
 
-### 2. Create DNS records in OVH
+### 2. Create DNS Records
 
 Add A records pointing to your Raspberry Pi's public IP:
 - `admin.francony.fr`
@@ -90,71 +168,115 @@ Add A records pointing to your Raspberry Pi's public IP:
 - `logs.francony.fr`
 - `webhook.francony.fr`
 
-### 3. Configure environment
+### 3. Configure Environment
 
 ```bash
 cd ~/Hosting/Infra
 cp .env.example .env
-# Edit .env and set WEBHOOK_SECRET
+nano .env  # Set WEBHOOK_SECRET
 ```
 
 ### 4. Generate SSL Certificates
 
 ```bash
-cd ~/Hosting/Infra
 chmod +x init-ssl.sh
 ./init-ssl.sh
 ```
 
-### 5. Start the apps (order matters!)
+### 5. Start the Stack (Order Matters!)
 
 ```bash
-# 1. Start Tipsy first (creates bartending_network)
+# 1. Start apps first (they create their networks)
 cd ~/Hosting/Bartending/Bartending_Deploy
 docker compose up -d
 
-# 2. Start MTG (creates mtg_network)
 cd ~/Hosting/MTG-Collection
 docker compose up -d
 
-# 3. Start the central proxy (connects to both networks)
+# 2. Start central infrastructure (connects to all networks)
 cd ~/Hosting/Infra
 docker compose up -d
 ```
 
+### 6. Configure GitHub Webhooks
+
+For each repository:
+1. Go to **Settings** → **Webhooks** → **Add webhook**
+2. **Payload URL:** `https://webhook.francony.fr/deploy`
+3. **Content type:** `application/json`
+4. **Secret:** (same as `WEBHOOK_SECRET` in `.env`)
+5. **Events:** Just the push event
+
 ## Maintenance
 
-### View logs
+### View Logs
+
 ```bash
-cd ~/Hosting/Infra
+# Nginx proxy logs
 docker compose logs -f nginx-proxy
+
+# Webhook server logs
 docker compose logs -f webhook
+
+# All logs
+docker compose logs -f
 ```
 
-### Check webhook status
+### Check Status
+
 ```bash
+# Webhook health
 curl https://webhook.francony.fr/health
+
+# List projects
 curl https://webhook.francony.fr/projects
+
+# System stats
+curl https://admin.francony.fr/api/system
+
+# Docker status
+curl https://admin.francony.fr/api/docker
+
+# SSL certificates
+curl https://admin.francony.fr/api/ssl
 ```
 
-### Trigger manual deployment (for testing)
+### Renew SSL Certificates
+
+Certbot auto-renews every 12 hours. To force renewal:
+
 ```bash
+docker compose run --rm certbot certbot renew --force-renewal
+docker compose restart nginx-proxy
+```
+
+### Manual Deployment
+
+```bash
+# Trigger deployment for a specific project
 curl -X POST https://webhook.francony.fr/deploy \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_WEBHOOK_SECRET" \
   -d '{"ref":"refs/heads/main","repository":{"name":"MTG-Collection"},"pusher":{"name":"manual"}}'
 ```
 
-### Renew SSL certificates
-Certbot auto-renews every 12 hours. To force renewal:
-```bash
-docker compose run --rm certbot certbot renew --force-renewal
-docker compose restart nginx-proxy
-```
+## SSL Certificates
 
-### Update an app manually
-```bash
-cd ~/Hosting/MTG-Collection
-git pull
-docker compose up -d --build
-```
+All domains use Let's Encrypt certificates managed by certbot:
+
+| Certificate | Domains Covered |
+|-------------|-----------------|
+| `admin.francony.fr` | admin.francony.fr |
+| `webhook.francony.fr` | webhook.francony.fr |
+| `tipsy.francony.fr` | tipsy.francony.fr, mtg.francony.fr, status.francony.fr, logs.francony.fr |
+
+Certificates are stored in `certbot/conf/live/` and auto-renewed.
+
+## Related Repositories
+
+- [Bartending_Deploy](https://github.com/AlexandreFrancony/Bartending_Deploy) - Tipsy deployment
+- [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection) - MTG card tracker
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
