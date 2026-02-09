@@ -103,7 +103,7 @@ pull_repo() {
         cd "$repo_path"
         git fetch origin
         git reset --hard "origin/$branch"
-        git clean -fd
+        # Note: Don't use 'git clean -fd' as it removes untracked files like credentials
     )
 
     local short_commit=$(cd "$repo_path" && git rev-parse --short HEAD)
