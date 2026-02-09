@@ -1,7 +1,7 @@
 # Bartending (Tipsy) - Deployment Configuration
 name: Bartending
 path: Bartending
-compose_file: /hosting/Infra/compose/bartending.yml
+compose_file: /home/bloster/Hosting/Infra/compose/bartending.yml
 branch:
   - prod
   - main

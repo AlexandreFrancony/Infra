@@ -81,11 +81,12 @@ services:
     restart: unless-stopped
     environment:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-change-me-in-production}
-      HOSTING_DIR: /hosting
+      HOSTING_DIR: /home/bloster/Hosting
       PORT: 9000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /home/bloster/Hosting:/hosting
+      # Mount at same path so docker compose build contexts work correctly
+      - /home/bloster/Hosting:/home/bloster/Hosting
       - webhook_logs:/var/log/infra
     networks:
       - proxy-network
