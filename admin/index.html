@@ -363,20 +363,18 @@
                     }
 
                     const domains = cert.domains.join(', ');
-                    const daysText = cert.days_left !== null ? `${cert.days_left}j restants` : 'Erreur';
+                    const daysText = cert.days_left !== null ? cert.days_left + 'j restants' : 'Erreur';
 
-                    return \`
-                        <div class="py-3 px-3 \${bgColor} rounded-lg">
-                            <div class="flex items-center justify-between mb-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="\${statusColor}">\${statusIcon}</span>
-                                    <span class="text-sm font-medium">\${cert.name}</span>
-                                </div>
-                                <span class="text-xs \${statusColor}">\${daysText}</span>
-                            </div>
-                            <p class="text-xs text-gray-400 ml-6">\${domains}</p>
-                        </div>
-                    \`;
+                    return '<div class="py-3 px-3 ' + bgColor + ' rounded-lg">' +
+                        '<div class="flex items-center justify-between mb-1">' +
+                            '<div class="flex items-center gap-2">' +
+                                '<span class="' + statusColor + '">' + statusIcon + '</span>' +
+                                '<span class="text-sm font-medium">' + cert.name + '</span>' +
+                            '</div>' +
+                            '<span class="text-xs ' + statusColor + '">' + daysText + '</span>' +
+                        '</div>' +
+                        '<p class="text-xs text-gray-400 ml-6">' + domains + '</p>' +
+                    '</div>';
                 }).join('');
 
             } catch (error) {
