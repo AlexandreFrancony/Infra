@@ -117,26 +117,24 @@ deploy_compose() {
     local compose_file=$2
 
     # If a specific compose file is provided, use it
+    # NOTE: docker compose CLI runs inside the container, so ALL paths must be container paths
+    # The compose file itself contains host paths for build contexts (read by Docker daemon via socket)
     if [ -n "$compose_file" ] && [ -f "$compose_file" ]; then
-        # Convert container path (/hosting) to host path (/home/bloster/Hosting)
-        local host_compose_file="${compose_file/\/hosting/\/home\/bloster\/Hosting}"
-        log_info "Using compose file: $host_compose_file"
+        log_info "Using compose file: $compose_file"
 
         # Check for corresponding .env file
-        # IMPORTANT: --env-file is read by docker compose CLI (runs in container)
-        # so we must use container path, not host path
-        local container_env_file="${compose_file%.yml}.env"
+        local env_file="${compose_file%.yml}.env"
         local env_args=""
-        if [ -f "$container_env_file" ]; then
-            log_info "Using env file: $container_env_file"
-            env_args="--env-file $container_env_file"
+        if [ -f "$env_file" ]; then
+            log_info "Using env file: $env_file"
+            env_args="--env-file $env_file"
         fi
 
         log_info "Building and deploying containers..."
-        docker compose -f "$host_compose_file" $env_args build
-        docker compose -f "$host_compose_file" $env_args up -d
+        docker compose -f "$compose_file" $env_args build
+        docker compose -f "$compose_file" $env_args up -d
         log_info "Verifying deployment..."
-        docker compose -f "$host_compose_file" $env_args ps
+        docker compose -f "$compose_file" $env_args ps
         return 0
     fi
 
