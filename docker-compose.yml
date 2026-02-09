@@ -2,12 +2,13 @@
 # Manages all *.francony.fr subdomains
 #
 # Structure on Pi:
-#   ~/infra/           <- this repo
-#   ~/bartending/      <- Tipsy app
-#   ~/MTG-Collection/  <- MTG app
+#   ~/Hosting/
+#   ├── Infra/           <- this repo
+#   ├── Bartending/      <- Tipsy app
+#   └── MTG-Collection/  <- MTG app
 #
 # Usage:
-#   cd ~/infra
+#   cd ~/Hosting/Infra
 #   docker compose up -d
 
 services:
@@ -69,8 +70,29 @@ services:
     networks:
       - proxy-network
 
+  # ============================================
+  # WEBHOOK SERVER - Auto-deployment
+  # ============================================
+  webhook:
+    build:
+      context: ./webhook-server
+      dockerfile: Dockerfile
+    container_name: webhook-server
+    restart: unless-stopped
+    environment:
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-change-me-in-production}
+      HOSTING_DIR: /hosting
+      PORT: 9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/bloster/Hosting:/hosting
+      - webhook_logs:/var/log/infra
+    networks:
+      - proxy-network
+
 volumes:
   uptime_kuma_data:
+  webhook_logs:
 
 networks:
   proxy-network:

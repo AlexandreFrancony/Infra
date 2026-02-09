@@ -1,0 +1,12 @@
+# Bartending (Tipsy) - Deployment Configuration
+name: Bartending
+path: Bartending
+compose_dir: Bartending_Deploy
+branch:
+  - prod
+  - main
+repos:
+  - Bartending_DB
+  - Bartending_Back
+  - Bartending_Front
+  - Bartending_Deploy
