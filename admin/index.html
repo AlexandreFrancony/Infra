@@ -186,6 +186,28 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SSL Certificates Dropdown -->
+            <div class="bg-gray-800 rounded-xl border border-gray-700">
+                <button onclick="toggleDropdown('ssl-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">Certificats SSL</span>
+                            <span id="ssl-summary" class="text-xs text-gray-500">Chargement...</span>
+                        </div>
+                    </div>
+                    <svg id="ssl-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="ssl-stats" class="dropdown-content">
+                    <div id="ssl-certificates" class="px-5 pb-5 space-y-2">
+                        <!-- Certificates will be loaded here -->
+                        <div class="text-gray-500 text-sm">Chargement des certificats...</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -299,6 +321,71 @@
             }
         }
 
+        // Fetch SSL certificates
+        async function fetchSSLStats() {
+            try {
+                const response = await fetch('/api/ssl');
+                const data = await response.json();
+
+                const certsDiv = document.getElementById('ssl-certificates');
+                const total = data.certificates.length;
+                const valid = data.certificates.filter(c => c.status === 'valid').length;
+                const expiring = data.certificates.filter(c => c.status === 'expiring').length;
+
+                let summaryText = `${total} certificat${total > 1 ? 's' : ''}`;
+                let summaryClass = 'text-xs text-green-500';
+                if (expiring > 0) {
+                    summaryText = `${expiring} expire bientot`;
+                    summaryClass = 'text-xs text-yellow-500';
+                }
+
+                document.getElementById('ssl-summary').textContent = summaryText;
+                document.getElementById('ssl-summary').className = summaryClass;
+
+                if (data.certificates.length === 0) {
+                    certsDiv.innerHTML = '<div class="text-gray-500 text-sm">Aucun certificat trouve</div>';
+                    return;
+                }
+
+                certsDiv.innerHTML = data.certificates.map(cert => {
+                    let statusColor = 'text-green-400';
+                    let statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                    let bgColor = 'bg-gray-700';
+
+                    if (cert.status === 'expiring') {
+                        statusColor = 'text-yellow-400';
+                        statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                        bgColor = 'bg-yellow-900/30';
+                    } else if (cert.status === 'expired' || cert.status === 'error') {
+                        statusColor = 'text-red-400';
+                        statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+                        bgColor = 'bg-red-900/30';
+                    }
+
+                    const domains = cert.domains.join(', ');
+                    const daysText = cert.days_left !== null ? `${cert.days_left}j restants` : 'Erreur';
+
+                    return \`
+                        <div class="py-3 px-3 \${bgColor} rounded-lg">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="\${statusColor}">\${statusIcon}</span>
+                                    <span class="text-sm font-medium">\${cert.name}</span>
+                                </div>
+                                <span class="text-xs \${statusColor}">\${daysText}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 ml-6">\${domains}</p>
+                        </div>
+                    \`;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to fetch SSL stats:', error);
+                document.getElementById('ssl-summary').textContent = 'Erreur';
+                document.getElementById('ssl-summary').className = 'text-xs text-red-500';
+            }
+        }
+
         // Update last update time
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
@@ -307,14 +394,19 @@
         // Initial load
         fetchRaspStats();
         fetchDockerStats();
+        fetchSSLStats();
         updateTimestamp();
 
-        // Refresh every 10 seconds
+        // Refresh every 10 seconds (SSL every 60s as it changes slowly)
         setInterval(() => {
             fetchRaspStats();
             fetchDockerStats();
             updateTimestamp();
         }, 10000);
+
+        setInterval(() => {
+            fetchSSLStats();
+        }, 60000);
     </script>
 </body>
 </html>

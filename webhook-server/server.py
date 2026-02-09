@@ -387,6 +387,83 @@ def api_docker():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/ssl', methods=['GET'])
+def api_ssl():
+    """Get SSL certificate status for all domains"""
+    try:
+        certs = []
+        letsencrypt_dir = '/home/bloster/Hosting/Infra/certbot/conf/live'
+
+        if os.path.exists(letsencrypt_dir):
+            for domain in os.listdir(letsencrypt_dir):
+                if domain.startswith('.') or domain == 'README':
+                    continue
+
+                cert_path = os.path.join(letsencrypt_dir, domain, 'fullchain.pem')
+                if not os.path.exists(cert_path):
+                    continue
+
+                # Get certificate expiry date using openssl
+                try:
+                    result = subprocess.run(
+                        ['openssl', 'x509', '-enddate', '-noout', '-in', cert_path],
+                        capture_output=True,
+                        text=True
+                    )
+                    if result.returncode == 0:
+                        # Parse: notAfter=Mar 15 12:00:00 2026 GMT
+                        line = result.stdout.strip()
+                        date_str = line.replace('notAfter=', '')
+                        # Parse the date
+                        from datetime import datetime
+                        expiry = datetime.strptime(date_str, '%b %d %H:%M:%S %Y %Z')
+                        days_left = (expiry - datetime.now()).days
+
+                        # Get domains covered by cert
+                        result_san = subprocess.run(
+                            ['openssl', 'x509', '-in', cert_path, '-noout', '-text'],
+                            capture_output=True,
+                            text=True
+                        )
+                        domains_covered = [domain]
+                        if result_san.returncode == 0:
+                            # Extract SAN domains
+                            for line in result_san.stdout.split('\n'):
+                                if 'DNS:' in line:
+                                    sans = re.findall(r'DNS:([^,\s]+)', line)
+                                    domains_covered = sans if sans else [domain]
+                                    break
+
+                        certs.append({
+                            'name': domain,
+                            'domains': domains_covered,
+                            'expiry': expiry.isoformat(),
+                            'days_left': days_left,
+                            'status': 'valid' if days_left > 30 else 'expiring' if days_left > 0 else 'expired'
+                        })
+                except Exception as e:
+                    logger.warning(f"Failed to parse cert for {domain}: {e}")
+                    certs.append({
+                        'name': domain,
+                        'domains': [domain],
+                        'expiry': None,
+                        'days_left': None,
+                        'status': 'error'
+                    })
+
+        # Sort by days left (most urgent first)
+        certs.sort(key=lambda c: c['days_left'] if c['days_left'] is not None else 999)
+
+        return jsonify({
+            'certificates': certs,
+            'total': len(certs)
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get SSL stats: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     logger.info(f"Starting webhook server")
     logger.info(f"Hosting directory: {HOSTING_DIR}")
