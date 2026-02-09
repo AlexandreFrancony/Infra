@@ -6,6 +6,7 @@
 # Environment variables (set by webhook server):
 #   PROJECT_NAME  - Name of the project (e.g., "Bartending", "MTG-Collection")
 #   PROJECT_PATH  - Full path to project directory
+#   COMPOSE_FILE  - Full path to docker-compose.yml (optional, overrides COMPOSE_DIR)
 #   COMPOSE_DIR   - Subdirectory containing docker-compose.yml (optional)
 #   REPOS         - Comma-separated list of repo names to pull
 #   BRANCH        - Branch to deploy (e.g., "main", "prod")
@@ -113,7 +114,29 @@ pull_repo() {
 # Deploy with docker compose
 deploy_compose() {
     local compose_path=$1
+    local compose_file=$2
 
+    # If a specific compose file is provided, use it
+    if [ -n "$compose_file" ] && [ -f "$compose_file" ]; then
+        log_info "Using compose file: $compose_file"
+
+        # Check for corresponding .env file
+        local env_file="${compose_file%.yml}.env"
+        local env_args=""
+        if [ -f "$env_file" ]; then
+            log_info "Using env file: $env_file"
+            env_args="--env-file $env_file"
+        fi
+
+        log_info "Building and deploying containers..."
+        docker compose -f "$compose_file" $env_args build
+        docker compose -f "$compose_file" $env_args up -d
+        log_info "Verifying deployment..."
+        docker compose -f "$compose_file" $env_args ps
+        return 0
+    fi
+
+    # Otherwise look for docker-compose.yml in the path
     if [ ! -f "$compose_path/docker-compose.yml" ] && [ ! -f "$compose_path/docker-compose.yaml" ]; then
         log_error "No docker-compose.yml found in $compose_path"
         return 1
@@ -163,14 +186,14 @@ main() {
         pull_repo "$PROJECT_PATH" "$BRANCH"
     fi
 
-    # Determine compose directory
+    # Determine compose location
     local compose_dir="$PROJECT_PATH"
     if [ -n "$COMPOSE_DIR" ]; then
         compose_dir="$PROJECT_PATH/$COMPOSE_DIR"
     fi
 
-    # Deploy
-    deploy_compose "$compose_dir"
+    # Deploy (pass COMPOSE_FILE if set)
+    deploy_compose "$compose_dir" "$COMPOSE_FILE"
 
     # Cleanup old images
     log_info "Cleaning up old Docker images..."

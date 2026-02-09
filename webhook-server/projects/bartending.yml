@@ -1,7 +1,7 @@
 # Bartending (Tipsy) - Deployment Configuration
 name: Bartending
 path: Bartending
-compose_dir: Bartending_Deploy
+compose_file: /hosting/Infra/compose/bartending.yml
 branch:
   - prod
   - main
@@ -9,4 +9,3 @@ repos:
   - Bartending_DB
   - Bartending_Back
   - Bartending_Front
-  - Bartending_Deploy

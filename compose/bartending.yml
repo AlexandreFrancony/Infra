@@ -1,0 +1,129 @@
+# Bartending V2 - Complete Stack (Tipsy)
+# Deploy all services on Raspberry Pi 4
+#
+# NOTE: This app is behind the central nginx proxy (Infra repo)
+# No ports are exposed directly - traffic comes through nginx-proxy
+#
+# Structure on Pi:
+#   ~/Hosting/Infra/           <- Central proxy + this compose file
+#   ~/Hosting/Bartending/
+#   ├── Bartending_DB/
+#   ├── Bartending_Back/
+#   └── Bartending_Front/
+#
+# Usage:
+#   cd ~/Hosting/Infra
+#   docker compose -f compose/bartending.yml --env-file compose/bartending.env up -d
+
+services:
+  # ============================================
+  # DATABASE - PostgreSQL
+  # ============================================
+  db:
+    build:
+      context: /home/bloster/Hosting/Bartending/Bartending_DB
+      dockerfile: Dockerfile
+    container_name: bartending_db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bartender}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      POSTGRES_DB: ${POSTGRES_DB:-bartending}
+
+    volumes:
+      - bartending_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bartender} -d ${POSTGRES_DB:-bartending}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    expose:
+      - "5432"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # BACKEND - Express.js API
+  # ============================================
+  api:
+    build:
+      context: /home/bloster/Hosting/Bartending/Bartending_Back
+      dockerfile: Dockerfile
+    container_name: bartending_api
+    restart: unless-stopped
+
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bartender}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bartending}
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-https://tipsy.francony.fr}
+      SMTP_HOST: ${SMTP_HOST:-ssl0.ovh.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM:-tipsy@francony.fr}
+
+    expose:
+      - "3001"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # FRONTEND - React via Nginx (internal only)
+  # ============================================
+  frontend:
+    build:
+      context: /home/bloster/Hosting/Bartending/Bartending_Front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: bartending_front
+    restart: unless-stopped
+
+    expose:
+      - "80"
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bartending_db_data:
+    driver: local
+
+networks:
+  default:
+    name: bartending_network
+    driver: bridge

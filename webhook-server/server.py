@@ -195,6 +195,7 @@ def deploy():
                 **os.environ,
                 'PROJECT_NAME': project_name,
                 'PROJECT_PATH': os.path.join(HOSTING_DIR, config.get('path', '')),
+                'COMPOSE_FILE': config.get('compose_file', ''),
                 'COMPOSE_DIR': config.get('compose_dir', ''),
                 'REPOS': ','.join(config.get('repos', [])),
                 'BRANCH': branch

@@ -9,6 +9,8 @@ certbot/www/*
 # Environment
 .env
 .env.local
+compose/*.env
+!compose/*.env.example
 
 # OS
 .DS_Store
