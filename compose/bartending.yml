@@ -121,7 +121,8 @@ services:
 
 volumes:
   bartending_db_data:
-    driver: local
+    external: true
+    name: bartending_deploy_bartending_db_data
 
 networks:
   default:
