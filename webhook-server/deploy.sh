@@ -122,13 +122,14 @@ deploy_compose() {
         local host_compose_file="${compose_file/\/hosting/\/home\/bloster\/Hosting}"
         log_info "Using compose file: $host_compose_file"
 
-        # Check for corresponding .env file (use container path to check existence)
+        # Check for corresponding .env file
+        # IMPORTANT: --env-file is read by docker compose CLI (runs in container)
+        # so we must use container path, not host path
         local container_env_file="${compose_file%.yml}.env"
-        local host_env_file="${host_compose_file%.yml}.env"
         local env_args=""
         if [ -f "$container_env_file" ]; then
-            log_info "Using env file: $host_env_file"
-            env_args="--env-file $host_env_file"
+            log_info "Using env file: $container_env_file"
+            env_args="--env-file $container_env_file"
         fi
 
         log_info "Building and deploying containers..."
