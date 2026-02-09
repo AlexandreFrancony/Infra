@@ -139,20 +139,23 @@ deploy_compose() {
     fi
 
     # Otherwise look for docker-compose.yml in the path
-    if [ ! -f "$compose_path/docker-compose.yml" ] && [ ! -f "$compose_path/docker-compose.yaml" ]; then
+    local found_compose=""
+    if [ -f "$compose_path/docker-compose.yml" ]; then
+        found_compose="$compose_path/docker-compose.yml"
+    elif [ -f "$compose_path/docker-compose.yaml" ]; then
+        found_compose="$compose_path/docker-compose.yaml"
+    else
         log_error "No docker-compose.yml found in $compose_path"
         return 1
     fi
 
+    log_info "Using compose file: $found_compose"
     log_info "Building and deploying containers..."
-    (
-        cd "$compose_path"
-        docker compose build
-        docker compose up -d
-    )
+    docker compose -f "$found_compose" build
+    docker compose -f "$found_compose" up -d
 
     log_info "Verifying deployment..."
-    (cd "$compose_path" && docker compose ps)
+    docker compose -f "$found_compose" ps
 }
 
 # Main
