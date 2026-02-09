@@ -122,12 +122,13 @@ deploy_compose() {
         local host_compose_file="${compose_file/\/hosting/\/home\/bloster\/Hosting}"
         log_info "Using compose file: $host_compose_file"
 
-        # Check for corresponding .env file
-        local env_file="${host_compose_file%.yml}.env"
+        # Check for corresponding .env file (use container path to check existence)
+        local container_env_file="${compose_file%.yml}.env"
+        local host_env_file="${host_compose_file%.yml}.env"
         local env_args=""
-        if [ -f "${compose_file%.yml}.env" ]; then
-            log_info "Using env file: $env_file"
-            env_args="--env-file $env_file"
+        if [ -f "$container_env_file" ]; then
+            log_info "Using env file: $host_env_file"
+            env_args="--env-file $host_env_file"
         fi
 
         log_info "Building and deploying containers..."
