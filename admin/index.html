@@ -9,18 +9,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .dropdown-content.open { max-height: 500px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-running { background-color: #22c55e; }
+        .status-stopped { background-color: #ef4444; }
+        .status-unknown { background-color: #6b7280; }
+        .progress-bar { height: 6px; border-radius: 3px; background-color: #374151; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Header -->
         <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold mb-2">🏠 Francony Admin</h1>
+            <h1 class="text-4xl font-bold mb-2">Francony Admin</h1>
             <p class="text-gray-400">Infrastructure Dashboard</p>
         </header>
 
         <!-- Apps Grid -->
-        <section class="mb-12">
+        <section class="mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-300">Applications</h2>
             <div class="grid md:grid-cols-2 gap-4">
                 <!-- Tipsy -->
@@ -28,7 +36,7 @@
                    class="block bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-amber-500">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center text-2xl">
-                            🍸
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M7.5 7l-2-4.5h13l-2 4.5m-3.5 12V11h4l-4-4.5L10 11h4v8a2.5 2.5 0 0 1-5 0z"/></svg>
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg">Tipsy</h3>
@@ -43,7 +51,7 @@
                    class="block bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-purple-500">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-2xl">
-                            🎴
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6z"/></svg>
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg">MTG Collection</h3>
@@ -55,58 +63,258 @@
             </div>
         </section>
 
-        <!-- Tools Grid -->
-        <section class="mb-12">
-            <h2 class="text-xl font-semibold mb-4 text-gray-300">Outils</h2>
-            <div class="grid md:grid-cols-3 gap-4">
-                <!-- Status -->
-                <a href="https://status.francony.fr" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-5 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-green-500">
+        <!-- Dropdowns Container -->
+        <div class="space-y-4">
+            <!-- Tools Dropdown -->
+            <div class="bg-gray-800 rounded-xl border border-gray-700">
+                <button onclick="toggleDropdown('tools')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                            📊
+                        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
-                        <div>
-                            <h3 class="font-medium">Status</h3>
-                            <p class="text-gray-500 text-xs">Uptime Monitoring</p>
-                        </div>
+                        <span class="font-semibold">Outils</span>
                     </div>
-                </a>
-
-                <!-- Logs -->
-                <a href="https://logs.francony.fr" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-5 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-blue-500">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                            📝
-                        </div>
-                        <div>
-                            <h3 class="font-medium">Logs</h3>
-                            <p class="text-gray-500 text-xs">Container Logs</p>
-                        </div>
+                    <svg id="tools-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="tools" class="dropdown-content">
+                    <div class="px-5 pb-5 grid grid-cols-3 gap-3">
+                        <a href="https://status.francony.fr" target="_blank" class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors text-center">
+                            <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <span class="text-sm font-medium">Status</span>
+                        </a>
+                        <a href="https://logs.francony.fr" target="_blank" class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors text-center">
+                            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="text-sm font-medium">Logs</span>
+                        </a>
+                        <a href="https://github.com/AlexandreFrancony" target="_blank" class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors text-center">
+                            <div class="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            </div>
+                            <span class="text-sm font-medium">GitHub</span>
+                        </a>
                     </div>
-                </a>
-
-                <!-- GitHub -->
-                <a href="https://github.com/AlexandreFrancony" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-5 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-500">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
-                            🐙
-                        </div>
-                        <div>
-                            <h3 class="font-medium">GitHub</h3>
-                            <p class="text-gray-500 text-xs">Source Code</p>
-                        </div>
-                    </div>
-                </a>
+                </div>
             </div>
-        </section>
+
+            <!-- Raspberry Pi Stats Dropdown -->
+            <div class="bg-gray-800 rounded-xl border border-gray-700">
+                <button onclick="toggleDropdown('rasp-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">Raspberry Pi</span>
+                            <span id="rasp-status" class="text-xs text-gray-500">Chargement...</span>
+                        </div>
+                    </div>
+                    <svg id="rasp-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="rasp-stats" class="dropdown-content">
+                    <div class="px-5 pb-5 space-y-4">
+                        <!-- CPU -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">CPU</span>
+                                <span id="cpu-value" class="font-medium">--%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="cpu-bar" class="progress-fill bg-blue-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- RAM -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">RAM</span>
+                                <span id="ram-value" class="font-medium">-- / -- GB</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="ram-bar" class="progress-fill bg-green-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Disk -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">Disque</span>
+                                <span id="disk-value" class="font-medium">-- / -- GB</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="disk-bar" class="progress-fill bg-purple-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Temperature -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">Temperature</span>
+                                <span id="temp-value" class="font-medium">--C</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="temp-bar" class="progress-fill bg-orange-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Uptime -->
+                        <div class="flex justify-between text-sm pt-2 border-t border-gray-700">
+                            <span class="text-gray-400">Uptime</span>
+                            <span id="uptime-value" class="font-medium">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docker Containers Dropdown -->
+            <div class="bg-gray-800 rounded-xl border border-gray-700">
+                <button onclick="toggleDropdown('docker-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185zm-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.186zm0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186zm-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186zm-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186zm5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185zm-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185zm-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.185-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185zm-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.185.185v1.888c0 .102.084.185.185.185zm8.85 2.715h2.118a.185.185 0 00.185-.185v-1.888a.185.185 0 00-.185-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185zm-7.81 0h2.12a.185.185 0 00.184-.185v-1.888a.185.185 0 00-.184-.185h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185zm23.67-5.03c-.074-.104-.247-.26-.574-.376-.132-.046-.322-.09-.558-.124a4.107 4.107 0 00-.65-1.312c-.204-.264-.476-.538-.814-.74l-.188-.116-.122.18c-.173.254-.31.533-.408.826a3.115 3.115 0 00-.142.882c-.65-.054-1.313.024-1.94.245-.214.074-.42.163-.617.264H2.172a.185.185 0 00-.185.186v.015c-.01.332.022.663.096.987.096.426.262.84.492 1.218.28.468.66.87 1.11 1.173.52.35 1.16.576 1.92.678.88.119 1.78.108 2.66-.033a8.4 8.4 0 002.214-.69 6.716 6.716 0 001.682-1.078c.65-.589 1.126-1.281 1.534-2.054h.133c.535 0 .895-.156 1.138-.356.155-.124.28-.279.366-.455.03-.057.055-.116.076-.177l.028-.09-.088-.054c-.048-.03-.14-.063-.256-.084z"/></svg>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">Docker</span>
+                            <span id="docker-summary" class="text-xs text-gray-500">Chargement...</span>
+                        </div>
+                    </div>
+                    <svg id="docker-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="docker-stats" class="dropdown-content">
+                    <div id="docker-containers" class="px-5 pb-5 space-y-2">
+                        <!-- Containers will be loaded here -->
+                        <div class="text-gray-500 text-sm">Chargement des conteneurs...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Footer -->
-        <footer class="text-center text-gray-600 text-sm">
-            <p>Hosted on Raspberry Pi 4 • Francony Infrastructure</p>
+        <footer class="text-center text-gray-600 text-sm mt-12">
+            <p>Hosted on Raspberry Pi 4 - Francony Infrastructure</p>
+            <p class="text-xs mt-1">Last update: <span id="last-update">--</span></p>
         </footer>
     </div>
+
+    <script>
+        // Toggle dropdown
+        function toggleDropdown(id) {
+            const content = document.getElementById(id);
+            const arrow = document.getElementById(id + '-arrow');
+            content.classList.toggle('open');
+            arrow.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : '';
+        }
+
+        // Format bytes to human readable
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+        }
+
+        // Get progress bar color based on percentage
+        function getBarColor(percent, type = 'default') {
+            if (type === 'temp') {
+                if (percent < 50) return 'bg-green-500';
+                if (percent < 70) return 'bg-yellow-500';
+                if (percent < 85) return 'bg-orange-500';
+                return 'bg-red-500';
+            }
+            if (percent < 60) return type === 'cpu' ? 'bg-blue-500' : type === 'ram' ? 'bg-green-500' : 'bg-purple-500';
+            if (percent < 80) return 'bg-yellow-500';
+            return 'bg-red-500';
+        }
+
+        // Fetch Raspberry Pi stats
+        async function fetchRaspStats() {
+            try {
+                const response = await fetch('/api/system');
+                const data = await response.json();
+
+                // CPU
+                document.getElementById('cpu-value').textContent = data.cpu.percent.toFixed(1) + '%';
+                document.getElementById('cpu-bar').style.width = data.cpu.percent + '%';
+                document.getElementById('cpu-bar').className = 'progress-fill ' + getBarColor(data.cpu.percent, 'cpu');
+
+                // RAM
+                const ramPercent = (data.memory.used / data.memory.total) * 100;
+                document.getElementById('ram-value').textContent = formatBytes(data.memory.used) + ' / ' + formatBytes(data.memory.total);
+                document.getElementById('ram-bar').style.width = ramPercent + '%';
+                document.getElementById('ram-bar').className = 'progress-fill ' + getBarColor(ramPercent, 'ram');
+
+                // Disk
+                const diskPercent = (data.disk.used / data.disk.total) * 100;
+                document.getElementById('disk-value').textContent = formatBytes(data.disk.used) + ' / ' + formatBytes(data.disk.total);
+                document.getElementById('disk-bar').style.width = diskPercent + '%';
+                document.getElementById('disk-bar').className = 'progress-fill ' + getBarColor(diskPercent, 'disk');
+
+                // Temperature
+                const tempPercent = (data.temperature / 85) * 100; // 85C is max safe temp
+                document.getElementById('temp-value').textContent = data.temperature.toFixed(1) + 'C';
+                document.getElementById('temp-bar').style.width = Math.min(tempPercent, 100) + '%';
+                document.getElementById('temp-bar').className = 'progress-fill ' + getBarColor(tempPercent, 'temp');
+
+                // Uptime
+                document.getElementById('uptime-value').textContent = data.uptime;
+
+                // Status
+                document.getElementById('rasp-status').textContent = 'Online';
+                document.getElementById('rasp-status').className = 'text-xs text-green-500';
+
+            } catch (error) {
+                console.error('Failed to fetch rasp stats:', error);
+                document.getElementById('rasp-status').textContent = 'Offline';
+                document.getElementById('rasp-status').className = 'text-xs text-red-500';
+            }
+        }
+
+        // Fetch Docker containers
+        async function fetchDockerStats() {
+            try {
+                const response = await fetch('/api/docker');
+                const data = await response.json();
+
+                const containersDiv = document.getElementById('docker-containers');
+                const running = data.containers.filter(c => c.state === 'running').length;
+                const total = data.containers.length;
+
+                document.getElementById('docker-summary').textContent = `${running}/${total} running`;
+                document.getElementById('docker-summary').className = running === total ? 'text-xs text-green-500' : 'text-xs text-yellow-500';
+
+                containersDiv.innerHTML = data.containers.map(container => `
+                    <div class="flex items-center justify-between py-2 px-3 bg-gray-700 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="status-dot ${container.state === 'running' ? 'status-running' : 'status-stopped'}"></div>
+                            <span class="text-sm font-medium">${container.name}</span>
+                        </div>
+                        <span class="text-xs text-gray-400">${container.status}</span>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Failed to fetch docker stats:', error);
+                document.getElementById('docker-summary').textContent = 'Error';
+                document.getElementById('docker-summary').className = 'text-xs text-red-500';
+            }
+        }
+
+        // Update last update time
+        function updateTimestamp() {
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
+        }
+
+        // Initial load
+        fetchRaspStats();
+        fetchDockerStats();
+        updateTimestamp();
+
+        // Refresh every 10 seconds
+        setInterval(() => {
+            fetchRaspStats();
+            fetchDockerStats();
+            updateTimestamp();
+        }, 10000);
+    </script>
 </body>
 </html>

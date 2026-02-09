@@ -12,6 +12,7 @@ import logging
 import json
 import threading
 import time
+import re
 import yaml
 from datetime import datetime
 from flask import Flask, request, jsonify
@@ -246,6 +247,144 @@ def reload_config():
         'message': 'Configuration reloaded',
         'projects': list(set(c.get('name', 'unknown') for c in PROJECT_CONFIGS.values()))
     })
+
+
+# ============================================
+# System Stats API (for admin dashboard)
+# ============================================
+
+@app.route('/api/system', methods=['GET'])
+def api_system():
+    """Get Raspberry Pi system stats"""
+    try:
+        # CPU usage
+        cpu_percent = 0.0
+        try:
+            with open('/proc/stat', 'r') as f:
+                lines = f.readlines()
+            cpu_line = lines[0].split()
+            user, nice, system, idle, iowait, irq, softirq = map(int, cpu_line[1:8])
+            total = user + nice + system + idle + iowait + irq + softirq
+            idle_time = idle + iowait
+            # Simple approximation - use load average instead for accuracy
+            with open('/proc/loadavg', 'r') as f:
+                load = float(f.read().split()[0])
+            # Raspberry Pi 4 has 4 cores, so 100% per core
+            cpu_percent = min(load * 25, 100)  # Approximate percentage
+        except:
+            pass
+
+        # Memory
+        mem_total = 0
+        mem_used = 0
+        mem_available = 0
+        try:
+            with open('/proc/meminfo', 'r') as f:
+                meminfo = {}
+                for line in f:
+                    parts = line.split()
+                    meminfo[parts[0].rstrip(':')] = int(parts[1]) * 1024  # Convert to bytes
+            mem_total = meminfo.get('MemTotal', 0)
+            mem_available = meminfo.get('MemAvailable', 0)
+            mem_used = mem_total - mem_available
+        except:
+            pass
+
+        # Disk
+        disk_total = 0
+        disk_used = 0
+        try:
+            result = subprocess.run(['df', '-B1', '/'], capture_output=True, text=True)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                if len(lines) > 1:
+                    parts = lines[1].split()
+                    disk_total = int(parts[1])
+                    disk_used = int(parts[2])
+        except:
+            pass
+
+        # Temperature
+        temperature = 0.0
+        try:
+            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                temperature = int(f.read().strip()) / 1000.0
+        except:
+            pass
+
+        # Uptime
+        uptime_str = ""
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime_seconds = float(f.read().split()[0])
+            days = int(uptime_seconds // 86400)
+            hours = int((uptime_seconds % 86400) // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            if days > 0:
+                uptime_str = f"{days}j {hours}h {minutes}m"
+            elif hours > 0:
+                uptime_str = f"{hours}h {minutes}m"
+            else:
+                uptime_str = f"{minutes}m"
+        except:
+            uptime_str = "unknown"
+
+        return jsonify({
+            'cpu': {
+                'percent': cpu_percent
+            },
+            'memory': {
+                'total': mem_total,
+                'used': mem_used,
+                'available': mem_available
+            },
+            'disk': {
+                'total': disk_total,
+                'used': disk_used
+            },
+            'temperature': temperature,
+            'uptime': uptime_str
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get system stats: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/docker', methods=['GET'])
+def api_docker():
+    """Get Docker container status"""
+    try:
+        result = subprocess.run(
+            ['docker', 'ps', '-a', '--format', '{{.Names}}\t{{.State}}\t{{.Status}}'],
+            capture_output=True,
+            text=True
+        )
+
+        containers = []
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                if line:
+                    parts = line.split('\t')
+                    if len(parts) >= 3:
+                        containers.append({
+                            'name': parts[0],
+                            'state': parts[1],
+                            'status': parts[2]
+                        })
+
+        # Sort: running first, then alphabetically
+        containers.sort(key=lambda c: (0 if c['state'] == 'running' else 1, c['name']))
+
+        return jsonify({
+            'containers': containers,
+            'total': len(containers),
+            'running': len([c for c in containers if c['state'] == 'running'])
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get docker stats: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
