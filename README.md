@@ -19,11 +19,11 @@ Central reverse proxy, auto-deployment webhook, SSL certificates, and shared ser
                               │  │            │                      │    │
                               │  │  ┌─────────┼─────────────────┐   │    │
                               │  │  │         │                 │   │    │
-                              │  │  ▼         ▼                 ▼   │    │
-                              │  │ ┌───┐   ┌───┐   ┌───┐   ┌───┐   │    │
-                              │  │ │Tip│   │MTG│   │Sta│   │Log│   │    │
-                              │  │ │sy │   │   │   │tus│   │s  │   │    │
-                              │  │ └───┘   └───┘   └───┘   └───┘   │    │
+                              │  │  ▼         ▼          ▼         │    │
+                              │  │ ┌───┐   ┌───┐   ┌────────┐     │    │
+                              │  │ │Tip│   │MTG│   │Cash-a- │     │    │
+                              │  │ │sy │   │   │   │  lot   │     │    │
+                              │  │ └───┘   └───┘   └────────┘     │    │
                               │  │                                  │    │
                               │  │  webhook-server :9000            │    │
                               │  │  (auto-deployment)               │    │
@@ -38,8 +38,7 @@ Central reverse proxy, auto-deployment webhook, SSL certificates, and shared ser
 | `admin.francony.fr` | Admin Dashboard | Central control panel with system stats |
 | `tipsy.francony.fr` | Tipsy | Cocktail ordering application |
 | `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
-| `status.francony.fr` | Uptime Kuma | Uptime monitoring dashboard |
-| `logs.francony.fr` | Dozzle | Docker container log viewer |
+| `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot (Claude Haiku) |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
 
 ## Admin Dashboard
@@ -49,7 +48,7 @@ The admin dashboard (`admin.francony.fr`) provides:
 - **System Monitoring**: CPU, RAM, Disk usage, Temperature
 - **Docker Status**: All containers with health status
 - **SSL Certificates**: Expiry tracking for all domains
-- **Quick Links**: Access to all services
+- **Quick Links**: Access to all services (Tipsy, MTG, Cash-a-lot)
 
 ### API Endpoints
 
@@ -81,7 +80,8 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   ├── Bartending_Back/
 │   ├── Bartending_Front/
 │   └── Bartending_Deploy/
-└── MTG-Collection/             # MTG app (1 repo)
+├── MTG-Collection/             # MTG app (1 repo)
+└── Cash-a-lot/                 # AI crypto trading bot
 ```
 
 ## Docker Stack
@@ -89,9 +89,8 @@ The admin dashboard (`admin.francony.fr`) provides:
 | Service | Port | Network | Description |
 |---------|------|---------|-------------|
 | `nginx-proxy` | 80, 443 | proxy-network + app networks | Central reverse proxy |
+| `postgres` | 5432 (internal) | proxy + app networks | Central PostgreSQL database |
 | `webhook-server` | 9000 (internal) | proxy-network | GitHub webhook receiver |
-| `uptime-kuma` | 3001 (internal) | proxy-network | Uptime monitoring |
-| `dozzle` | 8080 (internal) | proxy-network | Docker log viewer |
 | `certbot` | - | - | SSL certificate renewal |
 
 ## Auto-Deployment
@@ -164,8 +163,7 @@ Add A records pointing to your Raspberry Pi's public IP:
 - `admin.francony.fr`
 - `tipsy.francony.fr`
 - `mtg.francony.fr`
-- `status.francony.fr`
-- `logs.francony.fr`
+- `crypto.francony.fr`
 - `webhook.francony.fr`
 
 ### 3. Configure Environment
@@ -191,6 +189,9 @@ cd ~/Hosting/Bartending/Bartending_Deploy
 docker compose up -d
 
 cd ~/Hosting/MTG-Collection
+docker compose up -d
+
+cd ~/Hosting/Cash-a-lot
 docker compose up -d
 
 # 2. Start central infrastructure (connects to all networks)
@@ -268,7 +269,8 @@ All domains use Let's Encrypt certificates managed by certbot:
 |-------------|-----------------|
 | `admin.francony.fr` | admin.francony.fr |
 | `webhook.francony.fr` | webhook.francony.fr |
-| `tipsy.francony.fr` | tipsy.francony.fr, mtg.francony.fr, status.francony.fr, logs.francony.fr |
+| `tipsy.francony.fr` | tipsy.francony.fr, mtg.francony.fr |
+| `crypto.francony.fr` | crypto.francony.fr |
 
 Certificates are stored in `certbot/conf/live/` and auto-renewed.
 
@@ -276,6 +278,7 @@ Certificates are stored in `certbot/conf/live/` and auto-renewed.
 
 - [Bartending_Deploy](https://github.com/AlexandreFrancony/Bartending_Deploy) - Tipsy deployment
 - [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection) - MTG card tracker
+- [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot
 
 ## License
 
