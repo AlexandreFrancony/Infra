@@ -66,9 +66,6 @@ def verify_signature(f):
         signature = request.headers.get('X-Hub-Signature-256')
 
         if not signature:
-            if os.environ.get('FLASK_ENV') == 'development':
-                logger.warning("No signature provided (development mode)")
-                return f(*args, **kwargs)
             logger.warning("No signature provided")
             return jsonify({'error': 'No signature'}), 401
 
@@ -88,17 +85,17 @@ def verify_signature(f):
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint"""
+    """Health check endpoint (minimal info)"""
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'projects': list(set(c.get('name', 'unknown') for c in PROJECT_CONFIGS.values()))
+        'timestamp': datetime.now().isoformat()
     })
 
 
 @app.route('/projects', methods=['GET'])
+@verify_signature
 def list_projects():
-    """List all configured projects"""
+    """List all configured projects (requires webhook signature)"""
     projects = {}
     for repo, config in PROJECT_CONFIGS.items():
         name = config.get('name', 'unknown')
@@ -239,8 +236,9 @@ def deploy():
 
 
 @app.route('/reload-config', methods=['POST'])
+@verify_signature
 def reload_config():
-    """Reload project configurations"""
+    """Reload project configurations (requires webhook signature)"""
     global PROJECT_CONFIGS
     PROJECT_CONFIGS = load_project_configs()
     return jsonify({
@@ -471,13 +469,10 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 9000))
 
-    if os.environ.get('FLASK_ENV') == 'development':
-        app.run(host='0.0.0.0', port=port, debug=True)
-    else:
-        try:
-            from waitress import serve
-            logger.info(f"Starting production server on port {port}")
-            serve(app, host='0.0.0.0', port=port)
-        except ImportError:
-            logger.warning("Waitress not installed, using Flask dev server")
-            app.run(host='0.0.0.0', port=port)
+    try:
+        from waitress import serve
+        logger.info(f"Starting production server on port {port}")
+        serve(app, host='0.0.0.0', port=port)
+    except ImportError:
+        logger.warning("Waitress not installed, using Flask dev server (debug disabled)")
+        app.run(host='0.0.0.0', port=port, debug=False)

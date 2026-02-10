@@ -19,6 +19,8 @@ services:
     image: nginx:alpine
     container_name: nginx-proxy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "80:80"
       - "443:443"
@@ -28,6 +30,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
       - ./admin:/usr/share/nginx/admin:ro
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
       interval: 120s
@@ -59,6 +62,8 @@ services:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - uptime_kuma_data:/app/data
     networks:
@@ -71,6 +76,8 @@ services:
     image: amir20/dozzle:latest
     container_name: dozzle
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
