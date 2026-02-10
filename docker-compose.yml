@@ -28,6 +28,12 @@ services:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
       - ./admin:/usr/share/nginx/admin:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+      interval: 120s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - proxy-network
       - bartending_network
@@ -79,6 +85,12 @@ services:
       dockerfile: Dockerfile
     container_name: webhook-server
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/health || exit 1"]
+      interval: 120s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     environment:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-change-me-in-production}
       HOSTING_DIR: /home/bloster/Hosting
