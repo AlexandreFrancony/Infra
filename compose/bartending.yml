@@ -1,11 +1,12 @@
 # Bartending V2 - Complete Stack (Tipsy)
-# Deploy all services on Raspberry Pi 4
+# Deploy on Raspberry Pi 4
 #
 # NOTE: This app is behind the central nginx proxy (Infra repo)
 # No ports are exposed directly - traffic comes through nginx-proxy
+# Database is hosted centrally in the Infra stack (postgres container)
 #
 # Structure on Pi:
-#   ~/Hosting/Infra/           <- Central proxy + this compose file
+#   ~/Hosting/Infra/           <- Central proxy + database + this compose file
 #   ~/Hosting/Bartending/
 #   ├── Bartending_DB/
 #   ├── Bartending_Back/
@@ -17,40 +18,6 @@
 
 services:
   # ============================================
-  # DATABASE - PostgreSQL
-  # ============================================
-  db:
-    build:
-      context: /home/bloster/Hosting/Bartending/Bartending_DB
-      dockerfile: Dockerfile
-    container_name: bartending_db
-    restart: unless-stopped
-
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-bartender}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
-      POSTGRES_DB: ${POSTGRES_DB:-bartending}
-
-    volumes:
-      - bartending_db_data:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bartender} -d ${POSTGRES_DB:-bartending}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-    expose:
-      - "5432"
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ============================================
   # BACKEND - Express.js API
   # ============================================
   api:
@@ -59,10 +26,12 @@ services:
       dockerfile: Dockerfile
     container_name: bartending_api
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
     environment:
       PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-bartender}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bartending}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bartender}:${POSTGRES_PASSWORD:?Database password required}@postgres:5432/${POSTGRES_DB:-bartending}
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
@@ -77,14 +46,10 @@ services:
     expose:
       - "3001"
 
-    depends_on:
-      db:
-        condition: service_healthy
-
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 120s
+      timeout: 5s
       retries: 3
       start_period: 30s
 
@@ -105,24 +70,20 @@ services:
         VITE_API_URL: ""
     container_name: bartending_front
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
     expose:
       - "80"
 
     depends_on:
-      api:
-        condition: service_healthy
+      - api
 
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  bartending_db_data:
-    external: true
-    name: bartending_deploy_bartending_db_data
 
 networks:
   default:
