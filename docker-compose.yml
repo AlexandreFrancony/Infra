@@ -5,7 +5,8 @@
 #   ~/Hosting/
 #   ├── Infra/           <- this repo
 #   ├── Bartending/      <- Tipsy app
-#   └── MTG-Collection/  <- MTG app
+#   ├── MTG-Collection/  <- MTG app
+#   └── Cash-a-lot/      <- Crypto trading bot
 #
 # Usage:
 #   cd ~/Hosting/Infra
@@ -41,11 +42,12 @@ services:
       - proxy-network
       - bartending_network
       - mtg_network
+      - cashalot_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   # ============================================
-  # POSTGRESQL - Central Database (bartending + mtg_collection)
+  # POSTGRESQL - Central Database (bartending + mtg_collection + cashalot)
   # ============================================
   postgres:
     build:
@@ -60,10 +62,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
       POSTGRES_DB: ${POSTGRES_DB:-bartending}
       MTG_DB_PASSWORD: ${MTG_DB_PASSWORD:?MTG database password required}
+      CASHALOT_DB_PASSWORD: ${CASHALOT_DB_PASSWORD:?Cash-a-lot database password required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # MTG database init script (runs after Bartending init scripts from Dockerfile)
       - ./database/00-create-mtg-database.sh:/docker-entrypoint-initdb.d/00-create-mtg-database.sh:ro
+      # Cash-a-lot database init script
+      - ./database/01-create-cashalot-database.sh:/docker-entrypoint-initdb.d/01-create-cashalot-database.sh:ro
     expose:
       - "5432"
     healthcheck:
@@ -81,6 +86,7 @@ services:
       - proxy-network
       - bartending_network
       - mtg_network
+      - cashalot_network
 
   # ============================================
   # WEBHOOK SERVER - Auto-deployment
@@ -121,4 +127,6 @@ networks:
   bartending_network:
     external: true
   mtg_network:
+    external: true
+  cashalot_network:
     external: true
