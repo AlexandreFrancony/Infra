@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://get.docker.com | sh \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure git to trust all repos in the hosting directory
-RUN git config --global --add safe.directory '*'
+# Configure git safe.directory au niveau system (pas global)
+# car /root/.gitconfig est monté depuis l'hôte pour les credentials
+RUN git config --system --add safe.directory '*'
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
