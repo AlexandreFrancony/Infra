@@ -111,6 +111,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Mount at same path so docker compose build contexts work correctly
       - /home/bloster/Hosting:/home/bloster/Hosting
+      # Git credentials pour que le webhook puisse pull les repos privés
+      - /home/bloster/.git-credentials:/root/.git-credentials:ro
+      - /home/bloster/.gitconfig:/root/.gitconfig:ro
       - webhook_logs:/var/log/infra
     networks:
       - proxy-network
