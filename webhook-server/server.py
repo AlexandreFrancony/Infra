@@ -189,15 +189,20 @@ def deploy():
         try:
             logger.info(f"Starting deployment for {project_name}")
 
+            # Construire les variables d'environnement pour deploy.sh
+            # IMPORTANT: On utilise DEPLOY_COMPOSE_FILE au lieu de COMPOSE_FILE
+            # car docker compose utilise COMPOSE_FILE nativement
             env = {
                 **os.environ,
                 'PROJECT_NAME': project_name,
                 'PROJECT_PATH': os.path.join(HOSTING_DIR, config.get('path', '')),
-                'COMPOSE_FILE': config.get('compose_file', ''),
+                'DEPLOY_COMPOSE_FILE': config.get('compose_file', ''),
                 'COMPOSE_DIR': config.get('compose_dir', ''),
                 'REPOS': ','.join(config.get('repos', [])),
                 'BRANCH': branch
             }
+            # Supprimer COMPOSE_FILE de l'env pour ne pas interférer avec docker compose
+            env.pop('COMPOSE_FILE', None)
 
             process = subprocess.Popen(
                 ['/bin/bash', DEPLOY_SCRIPT],
@@ -212,9 +217,13 @@ def deploy():
 
             if process.returncode == 0:
                 logger.info(f"Deployment completed for {project_name} in {duration:.1f}s")
+                if stdout:
+                    logger.debug(f"[{project_name}] stdout: {stdout.decode()[-500:]}")
             else:
-                error_msg = stderr.decode()[-1000:]
-                logger.error(f"Deployment failed for {project_name}: {error_msg}")
+                out_msg = stdout.decode()[-500:] if stdout else ""
+                err_msg = stderr.decode()[-1000:] if stderr else ""
+                logger.error(f"Deployment failed for {project_name} (exit {process.returncode}):\n"
+                             f"STDOUT: {out_msg}\nSTDERR: {err_msg}")
 
         except subprocess.TimeoutExpired:
             process.kill()

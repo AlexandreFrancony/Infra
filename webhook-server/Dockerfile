@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://get.docker.com | sh \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure git to trust only the hosting directory
-RUN git config --global --add safe.directory '/home/bloster/Hosting'
+# Configure git to trust all repos in the hosting directory
+RUN git config --global --add safe.directory '*'
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

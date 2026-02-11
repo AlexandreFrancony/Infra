@@ -4,12 +4,14 @@
 # Pulls latest changes and rebuilds Docker containers for any project
 #
 # Environment variables (set by webhook server):
-#   PROJECT_NAME  - Name of the project (e.g., "Bartending", "MTG-Collection")
-#   PROJECT_PATH  - Full path to project directory
-#   COMPOSE_FILE  - Full path to docker-compose.yml (optional, overrides COMPOSE_DIR)
-#   COMPOSE_DIR   - Subdirectory containing docker-compose.yml (optional)
-#   REPOS         - Comma-separated list of repo names to pull
-#   BRANCH        - Branch to deploy (e.g., "main", "prod")
+#   PROJECT_NAME          - Name of the project (e.g., "Bartending", "MTG-Collection")
+#   PROJECT_PATH          - Full path to project directory
+#   DEPLOY_COMPOSE_FILE   - Full path to docker-compose.yml (optional, overrides COMPOSE_DIR)
+#   COMPOSE_DIR           - Subdirectory containing docker-compose.yml (optional)
+#   REPOS                 - Comma-separated list of repo names to pull
+#   BRANCH                - Branch to deploy (e.g., "main", "prod")
+#
+# NOTE: On n'utilise PAS COMPOSE_FILE car c'est une variable native de docker compose
 
 set -e
 
@@ -197,8 +199,8 @@ main() {
         compose_dir="$PROJECT_PATH/$COMPOSE_DIR"
     fi
 
-    # Deploy (pass COMPOSE_FILE if set)
-    deploy_compose "$compose_dir" "$COMPOSE_FILE"
+    # Deploy (pass DEPLOY_COMPOSE_FILE if set)
+    deploy_compose "$compose_dir" "$DEPLOY_COMPOSE_FILE"
 
     # Cleanup old images
     log_info "Cleaning up old Docker images..."
