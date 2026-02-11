@@ -1,0 +1,7 @@
+# Cash-a-lot - Deployment Configuration
+name: Cash-a-lot
+path: Cash-a-lot
+branch:
+  - main
+repos:
+  - Cash-a-lot
