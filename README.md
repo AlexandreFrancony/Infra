@@ -40,6 +40,7 @@ Central reverse proxy, auto-deployment webhook, SSL certificates, and shared ser
 | `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
 | `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot (Claude Haiku) |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
+| *(local)* | Calv-a-lot | Copy-trading follower pour Cash-a-lot (chez les amis) |
 
 ## Admin Dashboard
 
@@ -64,11 +65,12 @@ The admin dashboard (`admin.francony.fr`) provides:
 ~/Hosting/                      # On Raspberry Pi
 ├── Infra/                      # This repo (central proxy + webhook)
 │   ├── nginx/
-│   │   └── nginx.conf          # Main proxy configuration
+│   │   ├── nginx.conf          # Main proxy configuration
+│   │   └── sites/              # Per-domain site configs (admin, tipsy, mtg, crypto, webhook)
 │   ├── certbot/
 │   │   └── conf/               # Let's Encrypt certificates
 │   ├── admin/
-│   │   └── index.html          # Admin dashboard (static)
+│   │   └── index.html          # Admin dashboard (static, favicon 🏠)
 │   ├── webhook-server/
 │   │   ├── server.py           # Flask webhook + monitoring API
 │   │   ├── deploy.sh           # Deployment script
@@ -131,15 +133,38 @@ repos:
   - MTG-Collection
 ```
 
+**cashalot.yml**
+```yaml
+name: Cash-a-lot
+path: Cash-a-lot
+branch:
+  - main
+repos:
+  - Cash-a-lot
+```
+
+**infra.yml**
+```yaml
+name: Infra
+path: Infra
+branch:
+  - master
+  - main
+repos:
+  - Infra
+```
+
+> Note: Calv-a-lot n'a pas de webhook (déployé localement chez les amis, pas sur le Pi central).
+
 ### Webhook Endpoints
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/health` | GET | None | Health check |
-| `/projects` | GET | None | List configured projects |
+| `/projects` | GET | HMAC-SHA256 | List configured projects |
 | `/status` | GET | None | Deployment lock status |
 | `/deploy` | POST | HMAC-SHA256 | GitHub webhook receiver |
-| `/reload-config` | POST | None | Reload project configs |
+| `/reload-config` | POST | HMAC-SHA256 | Reload project configs |
 
 ## First Time Setup
 
@@ -279,6 +304,7 @@ Certificates are stored in `certbot/conf/live/` and auto-renewed.
 - [Bartending_Deploy](https://github.com/AlexandreFrancony/Bartending_Deploy) - Tipsy deployment
 - [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection) - MTG card tracker
 - [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot
+- [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot) - Copy-trading follower pour Cash-a-lot
 
 ## License
 
