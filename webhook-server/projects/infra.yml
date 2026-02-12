@@ -4,5 +4,6 @@ name: Infra
 path: Infra
 branch:
   - master
+  - main
 repos:
   - Infra
