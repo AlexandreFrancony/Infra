@@ -1,0 +1,8 @@
+# Infra - Deployment Configuration
+# git pull + docker compose up (rebuild nginx si besoin, pas le webhook)
+name: Infra
+path: Infra
+branch:
+  - master
+repos:
+  - Infra
