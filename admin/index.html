@@ -8,73 +8,159 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+    // Theme: auto-detect system preference, allow manual override
+    (function() {
+        var saved = localStorage.getItem('theme');
+        if (saved) {
+            document.documentElement.setAttribute('data-theme', saved);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+    })();
+    function toggleTheme() {
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('theme-icon-sun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('theme-icon-moon').classList.toggle('hidden', next === 'dark');
+    }
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        /* === Terracota Cream Theme === */
+        :root {
+            --bg-primary: #F5EFE0;
+            --bg-card: #EFE6D6;
+            --bg-header: #E8DECA;
+            --bg-input: #E8DECA;
+            --border: #D3C5AE;
+            --text-primary: #3E2E22;
+            --text-secondary: #5A4634;
+            --text-muted: #8A7A6A;
+            --accent: #C65F3C;
+            --accent-hover: #B34924;
+            --accent-light: #D87D5C;
+            --positive: #16a34a;
+            --negative: #dc2626;
+            --warning: #d97706;
+            --info: #5B7C99;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #2A2018;
+            --bg-card: #382A20;
+            --bg-header: #231B14;
+            --bg-input: #3E2E22;
+            --border: #5A4634;
+            --text-primary: #F5EFE0;
+            --text-secondary: #E6D7C3;
+            --text-muted: #8A7A6A;
+            --accent: #C65F3C;
+            --accent-hover: #D87D5C;
+            --accent-light: #E8A887;
+            --positive: #22c55e;
+            --negative: #ef4444;
+            --warning: #f59e0b;
+            --info: #7E9CB9;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); transition: background 0.3s, color 0.3s; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); }
+        .card-inner { background: var(--bg-input); }
+        .text-secondary { color: var(--text-secondary) !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border) !important; }
+
         .dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .dropdown-content.open { max-height: 500px; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .status-running { background-color: #22c55e; }
-        .status-stopped { background-color: #ef4444; }
-        .status-unknown { background-color: #6b7280; }
-        .progress-bar { height: 6px; border-radius: 3px; background-color: #374151; overflow: hidden; }
+        .status-running { background-color: var(--positive); }
+        .status-stopped { background-color: var(--negative); }
+        .status-unknown { background-color: var(--text-muted); }
+        .progress-bar { height: 6px; border-radius: 3px; background-color: var(--bg-input); overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 8px; padding: 6px 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; }
+        .theme-toggle:hover { background: var(--border); color: var(--text-primary); }
+        .theme-toggle svg { width: 18px; height: 18px; }
+
+        .app-card { background: var(--bg-card); border: 1px solid var(--border); transition: all 0.2s; }
+        .app-card:hover { background: var(--bg-input); }
+
+        .dropdown-btn { transition: background 0.2s; }
+        .dropdown-btn:hover { background: var(--bg-input); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-card); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Header -->
-        <header class="text-center mb-12">
+        <header class="text-center mb-12 relative">
+            <div class="absolute right-0 top-0">
+                <button onclick="toggleTheme()" class="theme-toggle" title="Changer le theme">
+                    <svg id="theme-icon-sun" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg id="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+                </button>
+            </div>
             <h1 class="text-4xl font-bold mb-2">Francony Admin</h1>
-            <p class="text-gray-400">Infrastructure Dashboard</p>
+            <p class="text-secondary">Infrastructure Dashboard</p>
         </header>
 
         <!-- Apps Grid -->
         <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-300">Applications</h2>
+            <h2 class="text-xl font-semibold mb-4 text-secondary">Applications</h2>
             <div class="grid md:grid-cols-2 gap-4">
                 <!-- Tipsy -->
                 <a href="https://tipsy.francony.fr" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-amber-500">
+                   class="block app-card rounded-xl p-6 hover:border-amber-500">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center text-2xl">
                             🍸
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg">Tipsy</h3>
-                            <p class="text-gray-400 text-sm">Bartending App</p>
+                            <p class="text-secondary text-sm">Bartending App</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-gray-500 text-sm">tipsy.francony.fr</p>
+                    <p class="mt-3 text-muted text-sm">tipsy.francony.fr</p>
                 </a>
 
                 <!-- MTG Collection -->
                 <a href="https://mtg.francony.fr" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-purple-500">
+                   class="block app-card rounded-xl p-6 hover:border-purple-500">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-2xl">
                             🎴
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg">MTG Collection</h3>
-                            <p class="text-gray-400 text-sm">Card Tracker</p>
+                            <p class="text-secondary text-sm">Card Tracker</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-gray-500 text-sm">mtg.francony.fr</p>
+                    <p class="mt-3 text-muted text-sm">mtg.francony.fr</p>
                 </a>
 
                 <!-- Cash-a-lot -->
                 <a href="https://crypto.francony.fr" target="_blank"
-                   class="block bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-green-500">
+                   class="block app-card rounded-xl p-6 hover:border-green-500">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-2xl">
                             🤖
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg">Cash-a-lot</h3>
-                            <p class="text-gray-400 text-sm">AI Crypto Trading</p>
+                            <p class="text-secondary text-sm">AI Crypto Trading</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-gray-500 text-sm">crypto.francony.fr</p>
+                    <p class="mt-3 text-muted text-sm">crypto.francony.fr</p>
                 </a>
             </div>
         </section>
@@ -82,25 +168,25 @@
         <!-- Dropdowns Container -->
         <div class="space-y-4">
             <!-- Raspberry Pi Stats Dropdown -->
-            <div class="bg-gray-800 rounded-xl border border-gray-700">
-                <button onclick="toggleDropdown('rasp-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+            <div class="card rounded-xl">
+                <button onclick="toggleDropdown('rasp-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-semibold">Raspberry Pi</span>
-                            <span id="rasp-status" class="text-xs text-gray-500">Chargement...</span>
+                            <span id="rasp-status" class="text-xs text-muted">Chargement...</span>
                         </div>
                     </div>
-                    <svg id="rasp-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg id="rasp-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div id="rasp-stats" class="dropdown-content">
                     <div class="px-5 pb-5 space-y-4">
                         <!-- CPU -->
                         <div>
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-400">CPU</span>
+                                <span class="text-secondary">CPU</span>
                                 <span id="cpu-value" class="font-medium">--%</span>
                             </div>
                             <div class="progress-bar">
@@ -110,7 +196,7 @@
                         <!-- RAM -->
                         <div>
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-400">RAM</span>
+                                <span class="text-secondary">RAM</span>
                                 <span id="ram-value" class="font-medium">-- / -- GB</span>
                             </div>
                             <div class="progress-bar">
@@ -120,7 +206,7 @@
                         <!-- Disk -->
                         <div>
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-400">Disque</span>
+                                <span class="text-secondary">Disque</span>
                                 <span id="disk-value" class="font-medium">-- / -- GB</span>
                             </div>
                             <div class="progress-bar">
@@ -130,7 +216,7 @@
                         <!-- Temperature -->
                         <div>
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-400">Temperature</span>
+                                <span class="text-secondary">Temperature</span>
                                 <span id="temp-value" class="font-medium">--C</span>
                             </div>
                             <div class="progress-bar">
@@ -138,8 +224,8 @@
                             </div>
                         </div>
                         <!-- Uptime -->
-                        <div class="flex justify-between text-sm pt-2 border-t border-gray-700">
-                            <span class="text-gray-400">Uptime</span>
+                        <div class="flex justify-between text-sm pt-2" style="border-top: 1px solid var(--border);">
+                            <span class="text-secondary">Uptime</span>
                             <span id="uptime-value" class="font-medium">--</span>
                         </div>
                     </div>
@@ -147,58 +233,65 @@
             </div>
 
             <!-- Docker Containers Dropdown -->
-            <div class="bg-gray-800 rounded-xl border border-gray-700">
-                <button onclick="toggleDropdown('docker-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+            <div class="card rounded-xl">
+                <button onclick="toggleDropdown('docker-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185zm-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.186zm0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186zm-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186zm-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186zm5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185zm-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185zm-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.185-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185zm-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.185.185v1.888c0 .102.084.185.185.185zm8.85 2.715h2.118a.185.185 0 00.185-.185v-1.888a.185.185 0 00-.185-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185zm-7.81 0h2.12a.185.185 0 00.184-.185v-1.888a.185.185 0 00-.184-.185h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185zm23.67-5.03c-.074-.104-.247-.26-.574-.376-.132-.046-.322-.09-.558-.124a4.107 4.107 0 00-.65-1.312c-.204-.264-.476-.538-.814-.74l-.188-.116-.122.18c-.173.254-.31.533-.408.826a3.115 3.115 0 00-.142.882c-.65-.054-1.313.024-1.94.245-.214.074-.42.163-.617.264H2.172a.185.185 0 00-.185.186v.015c-.01.332.022.663.096.987.096.426.262.84.492 1.218.28.468.66.87 1.11 1.173.52.35 1.16.576 1.92.678.88.119 1.78.108 2.66-.033a8.4 8.4 0 002.214-.69 6.716 6.716 0 001.682-1.078c.65-.589 1.126-1.281 1.534-2.054h.133c.535 0 .895-.156 1.138-.356.155-.124.28-.279.366-.455.03-.057.055-.116.076-.177l.028-.09-.088-.054c-.048-.03-.14-.063-.256-.084z"/></svg>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-semibold">Docker</span>
-                            <span id="docker-summary" class="text-xs text-gray-500">Chargement...</span>
+                            <span id="docker-summary" class="text-xs text-muted">Chargement...</span>
                         </div>
                     </div>
-                    <svg id="docker-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg id="docker-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div id="docker-stats" class="dropdown-content">
                     <div id="docker-containers" class="px-5 pb-5 space-y-2">
-                        <!-- Containers will be loaded here -->
-                        <div class="text-gray-500 text-sm">Chargement des conteneurs...</div>
+                        <div class="text-muted text-sm">Chargement des conteneurs...</div>
                     </div>
                 </div>
             </div>
 
             <!-- SSL Certificates Dropdown -->
-            <div class="bg-gray-800 rounded-xl border border-gray-700">
-                <button onclick="toggleDropdown('ssl-stats')" class="w-full p-5 flex items-center justify-between hover:bg-gray-750 rounded-xl transition-colors">
+            <div class="card rounded-xl">
+                <button onclick="toggleDropdown('ssl-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-semibold">Certificats SSL</span>
-                            <span id="ssl-summary" class="text-xs text-gray-500">Chargement...</span>
+                            <span id="ssl-summary" class="text-xs text-muted">Chargement...</span>
                         </div>
                     </div>
-                    <svg id="ssl-stats-arrow" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg id="ssl-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div id="ssl-stats" class="dropdown-content">
                     <div id="ssl-certificates" class="px-5 pb-5 space-y-2">
-                        <!-- Certificates will be loaded here -->
-                        <div class="text-gray-500 text-sm">Chargement des certificats...</div>
+                        <div class="text-muted text-sm">Chargement des certificats...</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <footer class="text-center text-gray-600 text-sm mt-12">
+        <footer class="text-center text-muted text-sm mt-12">
             <p>Hosted on Raspberry Pi 4 - Francony Infrastructure</p>
             <p class="text-xs mt-1">Last update: <span id="last-update">--</span></p>
         </footer>
     </div>
 
     <script>
+        // Init theme icon visibility
+        (function() {
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            var sun = document.getElementById('theme-icon-sun');
+            var moon = document.getElementById('theme-icon-moon');
+            if (sun) sun.classList.toggle('hidden', !isDark);
+            if (moon) moon.classList.toggle('hidden', isDark);
+        })();
+
         // Toggle dropdown
         function toggleDropdown(id) {
             const content = document.getElementById(id);
@@ -207,7 +300,6 @@
             arrow.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : '';
         }
 
-        // Format bytes to human readable
         function formatBytes(bytes, decimals = 1) {
             if (bytes === 0) return '0 B';
             const k = 1024;
@@ -216,7 +308,6 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
         }
 
-        // Get progress bar color based on percentage
         function getBarColor(percent, type = 'default') {
             if (type === 'temp') {
                 if (percent < 50) return 'bg-green-500';
@@ -229,50 +320,42 @@
             return 'bg-red-500';
         }
 
-        // Fetch Raspberry Pi stats
         async function fetchRaspStats() {
             try {
                 const response = await fetch('/api/system');
                 const data = await response.json();
 
-                // CPU
                 document.getElementById('cpu-value').textContent = data.cpu.percent.toFixed(1) + '%';
                 document.getElementById('cpu-bar').style.width = data.cpu.percent + '%';
                 document.getElementById('cpu-bar').className = 'progress-fill ' + getBarColor(data.cpu.percent, 'cpu');
 
-                // RAM
                 const ramPercent = (data.memory.used / data.memory.total) * 100;
                 document.getElementById('ram-value').textContent = formatBytes(data.memory.used) + ' / ' + formatBytes(data.memory.total);
                 document.getElementById('ram-bar').style.width = ramPercent + '%';
                 document.getElementById('ram-bar').className = 'progress-fill ' + getBarColor(ramPercent, 'ram');
 
-                // Disk
                 const diskPercent = (data.disk.used / data.disk.total) * 100;
                 document.getElementById('disk-value').textContent = formatBytes(data.disk.used) + ' / ' + formatBytes(data.disk.total);
                 document.getElementById('disk-bar').style.width = diskPercent + '%';
                 document.getElementById('disk-bar').className = 'progress-fill ' + getBarColor(diskPercent, 'disk');
 
-                // Temperature
-                const tempPercent = (data.temperature / 85) * 100; // 85C is max safe temp
+                const tempPercent = (data.temperature / 85) * 100;
                 document.getElementById('temp-value').textContent = data.temperature.toFixed(1) + 'C';
                 document.getElementById('temp-bar').style.width = Math.min(tempPercent, 100) + '%';
                 document.getElementById('temp-bar').className = 'progress-fill ' + getBarColor(tempPercent, 'temp');
 
-                // Uptime
                 document.getElementById('uptime-value').textContent = data.uptime;
 
-                // Status
                 document.getElementById('rasp-status').textContent = 'Online';
-                document.getElementById('rasp-status').className = 'text-xs text-green-500';
+                document.getElementById('rasp-status').style.color = 'var(--positive)';
 
             } catch (error) {
                 console.error('Failed to fetch rasp stats:', error);
                 document.getElementById('rasp-status').textContent = 'Offline';
-                document.getElementById('rasp-status').className = 'text-xs text-red-500';
+                document.getElementById('rasp-status').style.color = 'var(--negative)';
             }
         }
 
-        // Fetch Docker containers
         async function fetchDockerStats() {
             try {
                 const response = await fetch('/api/docker');
@@ -282,27 +365,28 @@
                 const running = data.containers.filter(c => c.state === 'running').length;
                 const total = data.containers.length;
 
-                document.getElementById('docker-summary').textContent = `${running}/${total} running`;
-                document.getElementById('docker-summary').className = running === total ? 'text-xs text-green-500' : 'text-xs text-yellow-500';
+                const summaryEl = document.getElementById('docker-summary');
+                summaryEl.textContent = `${running}/${total} running`;
+                summaryEl.style.color = running === total ? 'var(--positive)' : 'var(--warning)';
 
                 containersDiv.innerHTML = data.containers.map(container => `
-                    <div class="flex items-center justify-between py-2 px-3 bg-gray-700 rounded-lg">
+                    <div class="flex items-center justify-between py-2 px-3 card-inner rounded-lg">
                         <div class="flex items-center gap-3">
                             <div class="status-dot ${container.state === 'running' ? 'status-running' : 'status-stopped'}"></div>
                             <span class="text-sm font-medium">${container.name}</span>
                         </div>
-                        <span class="text-xs text-gray-400">${container.status}</span>
+                        <span class="text-xs text-muted">${container.status}</span>
                     </div>
                 `).join('');
 
             } catch (error) {
                 console.error('Failed to fetch docker stats:', error);
-                document.getElementById('docker-summary').textContent = 'Error';
-                document.getElementById('docker-summary').className = 'text-xs text-red-500';
+                var summaryEl = document.getElementById('docker-summary');
+                summaryEl.textContent = 'Error';
+                summaryEl.style.color = 'var(--negative)';
             }
         }
 
-        // Fetch SSL certificates
         async function fetchSSLStats() {
             try {
                 const response = await fetch('/api/ssl');
@@ -310,62 +394,58 @@
 
                 const certsDiv = document.getElementById('ssl-certificates');
                 const total = data.certificates.length;
-                const valid = data.certificates.filter(c => c.status === 'valid').length;
                 const expiring = data.certificates.filter(c => c.status === 'expiring').length;
 
-                let summaryText = `${total} certificat${total > 1 ? 's' : ''}`;
-                let summaryClass = 'text-xs text-green-500';
+                const summaryEl = document.getElementById('ssl-summary');
                 if (expiring > 0) {
-                    summaryText = `${expiring} expire bientot`;
-                    summaryClass = 'text-xs text-yellow-500';
+                    summaryEl.textContent = `${expiring} expire bientot`;
+                    summaryEl.style.color = 'var(--warning)';
+                } else {
+                    summaryEl.textContent = `${total} certificat${total > 1 ? 's' : ''}`;
+                    summaryEl.style.color = 'var(--positive)';
                 }
 
-                document.getElementById('ssl-summary').textContent = summaryText;
-                document.getElementById('ssl-summary').className = summaryClass;
-
                 if (data.certificates.length === 0) {
-                    certsDiv.innerHTML = '<div class="text-gray-500 text-sm">Aucun certificat trouve</div>';
+                    certsDiv.innerHTML = '<div class="text-muted text-sm">Aucun certificat trouve</div>';
                     return;
                 }
 
                 certsDiv.innerHTML = data.certificates.map(cert => {
-                    let statusColor = 'text-green-400';
+                    let statusColor = 'var(--positive)';
                     let statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-                    let bgColor = 'bg-gray-700';
+                    let bgClass = 'card-inner';
 
                     if (cert.status === 'expiring') {
-                        statusColor = 'text-yellow-400';
+                        statusColor = 'var(--warning)';
                         statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
-                        bgColor = 'bg-yellow-900/30';
                     } else if (cert.status === 'expired' || cert.status === 'error') {
-                        statusColor = 'text-red-400';
+                        statusColor = 'var(--negative)';
                         statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-                        bgColor = 'bg-red-900/30';
                     }
 
                     const domains = cert.domains.join(', ');
                     const daysText = cert.days_left !== null ? cert.days_left + 'j restants' : 'Erreur';
 
-                    return '<div class="py-3 px-3 ' + bgColor + ' rounded-lg">' +
+                    return '<div class="py-3 px-3 ' + bgClass + ' rounded-lg">' +
                         '<div class="flex items-center justify-between mb-1">' +
                             '<div class="flex items-center gap-2">' +
-                                '<span class="' + statusColor + '">' + statusIcon + '</span>' +
+                                '<span style="color:' + statusColor + '">' + statusIcon + '</span>' +
                                 '<span class="text-sm font-medium">' + cert.name + '</span>' +
                             '</div>' +
-                            '<span class="text-xs ' + statusColor + '">' + daysText + '</span>' +
+                            '<span class="text-xs" style="color:' + statusColor + '">' + daysText + '</span>' +
                         '</div>' +
-                        '<p class="text-xs text-gray-400 ml-6">' + domains + '</p>' +
+                        '<p class="text-xs text-muted ml-6">' + domains + '</p>' +
                     '</div>';
                 }).join('');
 
             } catch (error) {
                 console.error('Failed to fetch SSL stats:', error);
-                document.getElementById('ssl-summary').textContent = 'Erreur';
-                document.getElementById('ssl-summary').className = 'text-xs text-red-500';
+                var summaryEl = document.getElementById('ssl-summary');
+                summaryEl.textContent = 'Erreur';
+                summaryEl.style.color = 'var(--negative)';
             }
         }
 
-        // Update last update time
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
         }
@@ -376,7 +456,7 @@
         fetchSSLStats();
         updateTimestamp();
 
-        // Refresh every 10 seconds (SSL every 60s as it changes slowly)
+        // Refresh every 10 seconds (SSL every 60s)
         setInterval(() => {
             fetchRaspStats();
             fetchDockerStats();
