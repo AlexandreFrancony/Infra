@@ -101,7 +101,19 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Login Modal -->
+    <div id="loginOverlay" style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center;">
+        <div class="card p-8 rounded-xl" style="min-width:320px; max-width:400px;">
+            <h2 class="text-xl font-bold mb-4" style="color:var(--text-primary)">🏠 Francony Admin</h2>
+            <p class="text-sm mb-4" style="color:var(--text-secondary)">Authentification requise</p>
+            <input id="loginUser" type="text" placeholder="Utilisateur" class="w-full p-2 rounded mb-3" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
+            <input id="loginPass" type="password" placeholder="Mot de passe" class="w-full p-2 rounded mb-4" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);" onkeypress="if(event.key==='Enter')doLogin()">
+            <button onclick="doLogin()" style="background:var(--accent);color:#fff;" class="w-full py-2 rounded font-semibold hover:opacity-90 transition-opacity">Connexion</button>
+            <p id="loginError" class="text-sm mt-2" style="color:var(--negative);display:none;">Identifiants incorrects</p>
+        </div>
+    </div>
+
+    <div id="mainContent" style="display:none;" class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Header -->
         <header class="text-center mb-12 relative">
             <div class="absolute right-0 top-0">
@@ -283,6 +295,42 @@
     </div>
 
     <script>
+        // ── Auth ──────────────────────────────────────
+        let _authHeader = null;
+
+        function doLogin() {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            const header = 'Basic ' + btoa(user + ':' + pass);
+
+            fetch('/auth-check', { headers: { 'Authorization': header } })
+                .then(resp => {
+                    if (resp.ok) {
+                        _authHeader = header;
+                        document.getElementById('loginOverlay').style.display = 'none';
+                        document.getElementById('mainContent').style.display = 'block';
+                        startDashboard();
+                    } else {
+                        document.getElementById('loginError').style.display = 'block';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('loginError').style.display = 'block';
+                });
+        }
+
+        function authFetch(url) {
+            const headers = _authHeader ? { 'Authorization': _authHeader } : {};
+            return fetch(url, { headers });
+        }
+
+        // XSS protection
+        function esc(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                             .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         // Init theme icon visibility
         (function() {
             var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -322,7 +370,7 @@
 
         async function fetchRaspStats() {
             try {
-                const response = await fetch('/api/system');
+                const response = await authFetch('/api/system');
                 const data = await response.json();
 
                 document.getElementById('cpu-value').textContent = data.cpu.percent.toFixed(1) + '%';
@@ -358,7 +406,7 @@
 
         async function fetchDockerStats() {
             try {
-                const response = await fetch('/api/docker');
+                const response = await authFetch('/api/docker');
                 const data = await response.json();
 
                 const containersDiv = document.getElementById('docker-containers');
@@ -373,9 +421,9 @@
                     <div class="flex items-center justify-between py-2 px-3 card-inner rounded-lg">
                         <div class="flex items-center gap-3">
                             <div class="status-dot ${container.state === 'running' ? 'status-running' : 'status-stopped'}"></div>
-                            <span class="text-sm font-medium">${container.name}</span>
+                            <span class="text-sm font-medium">${esc(container.name)}</span>
                         </div>
-                        <span class="text-xs text-muted">${container.status}</span>
+                        <span class="text-xs text-muted">${esc(container.status)}</span>
                     </div>
                 `).join('');
 
@@ -389,7 +437,7 @@
 
         async function fetchSSLStats() {
             try {
-                const response = await fetch('/api/ssl');
+                const response = await authFetch('/api/ssl');
                 const data = await response.json();
 
                 const certsDiv = document.getElementById('ssl-certificates');
@@ -423,16 +471,16 @@
                         statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
                     }
 
-                    const domains = cert.domains.join(', ');
+                    const domains = cert.domains.map(d => esc(d)).join(', ');
                     const daysText = cert.days_left !== null ? cert.days_left + 'j restants' : 'Erreur';
 
                     return '<div class="py-3 px-3 ' + bgClass + ' rounded-lg">' +
                         '<div class="flex items-center justify-between mb-1">' +
                             '<div class="flex items-center gap-2">' +
                                 '<span style="color:' + statusColor + '">' + statusIcon + '</span>' +
-                                '<span class="text-sm font-medium">' + cert.name + '</span>' +
+                                '<span class="text-sm font-medium">' + esc(cert.name) + '</span>' +
                             '</div>' +
-                            '<span class="text-xs" style="color:' + statusColor + '">' + daysText + '</span>' +
+                            '<span class="text-xs" style="color:' + statusColor + '">' + esc(daysText) + '</span>' +
                         '</div>' +
                         '<p class="text-xs text-muted ml-6">' + domains + '</p>' +
                     '</div>';
@@ -450,22 +498,24 @@
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
         }
 
-        // Initial load
-        fetchRaspStats();
-        fetchDockerStats();
-        fetchSSLStats();
-        updateTimestamp();
-
-        // Refresh every 10 seconds (SSL every 60s)
-        setInterval(() => {
+        // Start dashboard after login
+        function startDashboard() {
             fetchRaspStats();
             fetchDockerStats();
-            updateTimestamp();
-        }, 10000);
-
-        setInterval(() => {
             fetchSSLStats();
-        }, 60000);
+            updateTimestamp();
+
+            // Refresh every 10 seconds (SSL every 60s)
+            setInterval(() => {
+                fetchRaspStats();
+                fetchDockerStats();
+                updateTimestamp();
+            }, 10000);
+
+            setInterval(() => {
+                fetchSSLStats();
+            }, 60000);
+        }
     </script>
 </body>
 </html>
