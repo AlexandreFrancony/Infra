@@ -303,12 +303,14 @@
             const pass = document.getElementById('loginPass').value;
             const header = 'Basic ' + btoa(user + ':' + pass);
 
-            fetch('/auth-check', { headers: { 'Authorization': header } })
+            // Tester directement un endpoint API protégé
+            fetch('/api/system', { headers: { 'Authorization': header } })
                 .then(resp => {
                     if (resp.ok) {
                         _authHeader = header;
                         document.getElementById('loginOverlay').style.display = 'none';
-                        document.getElementById('mainContent').style.display = 'block';
+                        document.getElementById('mainContent').style.display = '';
+                        document.getElementById('loginError').style.display = 'none';
                         startDashboard();
                     } else {
                         document.getElementById('loginError').style.display = 'block';
