@@ -106,9 +106,11 @@
         <div class="card p-8 rounded-xl" style="min-width:320px; max-width:400px;">
             <h2 class="text-xl font-bold mb-4" style="color:var(--text-primary)">🏠 Francony Admin</h2>
             <p class="text-sm mb-4" style="color:var(--text-secondary)">Authentification requise</p>
-            <input id="loginUser" type="text" placeholder="Utilisateur" class="w-full p-2 rounded mb-3" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
-            <input id="loginPass" type="password" placeholder="Mot de passe" class="w-full p-2 rounded mb-4" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);" onkeypress="if(event.key==='Enter')doLogin()">
-            <button onclick="doLogin()" style="background:var(--accent);color:#fff;" class="w-full py-2 rounded font-semibold hover:opacity-90 transition-opacity">Connexion</button>
+            <form onsubmit="event.preventDefault();doLogin()">
+              <input id="loginUser" name="username" type="text" autocomplete="username" placeholder="Utilisateur" class="w-full p-2 rounded mb-3" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
+              <input id="loginPass" name="password" type="password" autocomplete="current-password" placeholder="Mot de passe" class="w-full p-2 rounded mb-4" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
+              <button type="submit" style="background:var(--accent);color:#fff;" class="w-full py-2 rounded font-semibold hover:opacity-90 transition-opacity">Connexion</button>
+            </form>
             <p id="loginError" class="text-sm mt-2" style="color:var(--negative);display:none;">Identifiants incorrects</p>
         </div>
     </div>
