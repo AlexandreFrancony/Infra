@@ -18,7 +18,15 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from functools import wraps
 
-app = Flask(__name__)
+# Admin dashboard static files directory
+# In Docker, HOSTING_DIR is mounted at /home/bloster/Hosting
+# so admin files are at /home/bloster/Hosting/Infra/admin/
+ADMIN_DIR = os.path.join(
+    os.environ.get('HOSTING_DIR', '/home/bloster/Hosting'),
+    'Infra', 'admin'
+)
+
+app = Flask(__name__, static_folder=ADMIN_DIR, static_url_path='/static')
 
 # Configuration
 WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', 'change-me-in-production')
@@ -469,6 +477,39 @@ def api_ssl():
     except Exception as e:
         logger.error(f"Failed to get SSL stats: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# Admin Dashboard (static files)
+# Serves the admin dashboard when accessed via admin.francony.fr
+# Auth is handled by Pangolin at the tunnel level
+# ============================================
+
+@app.route('/')
+def admin_index():
+    """Serve admin dashboard index.html"""
+    index_path = os.path.join(ADMIN_DIR, 'index.html')
+    if os.path.exists(index_path):
+        from flask import send_from_directory
+        return send_from_directory(ADMIN_DIR, 'index.html')
+    return jsonify({'error': 'Admin dashboard not found'}), 404
+
+
+@app.route('/auth-check')
+def auth_check():
+    """Auth check endpoint - always returns OK when behind Pangolin"""
+    return 'OK', 200
+
+
+@app.route('/<path:filename>')
+def admin_static(filename):
+    """Serve admin dashboard static files"""
+    from flask import send_from_directory
+    filepath = os.path.join(ADMIN_DIR, filename)
+    if os.path.exists(filepath):
+        return send_from_directory(ADMIN_DIR, filename)
+    # Fall through to 404 for unknown static files
+    return jsonify({'error': 'Not found'}), 404
 
 
 if __name__ == '__main__':

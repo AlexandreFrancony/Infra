@@ -1,0 +1,35 @@
+# Newt - Pangolin tunnel client
+# Connects the ProDesk to the VPS via encrypted WireGuard tunnel
+#
+# Setup:
+#   1. Create a Site in Pangolin dashboard (type: Newt)
+#   2. Copy PANGOLIN_ENDPOINT, NEWT_ID, NEWT_SECRET to .env
+#   3. docker compose up -d
+#
+# Newt must be on ALL app networks to resolve container names
+# (same networks as the old nginx-proxy)
+
+services:
+  newt:
+    image: fosrl/newt
+    container_name: newt
+    restart: unless-stopped
+    environment:
+      - PANGOLIN_ENDPOINT=${PANGOLIN_ENDPOINT:?Set PANGOLIN_ENDPOINT in .env}
+      - NEWT_ID=${NEWT_ID:?Set NEWT_ID in .env}
+      - NEWT_SECRET=${NEWT_SECRET:?Set NEWT_SECRET in .env}
+    networks:
+      - proxy-network
+      - bartending_network
+      - mtg_network
+      - cashalot_network
+
+networks:
+  proxy-network:
+    external: true
+  bartending_network:
+    external: true
+  mtg_network:
+    external: true
+  cashalot_network:
+    external: true
