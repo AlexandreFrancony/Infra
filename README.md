@@ -1,34 +1,41 @@
 # Francony Infrastructure
 
-Central reverse proxy, auto-deployment webhook, SSL certificates, and shared services for all *.francony.fr applications.
+Central database, auto-deployment webhook, and shared services for all *.francony.fr applications.
 
 [![Admin](https://img.shields.io/badge/admin-admin.francony.fr-blue)](https://admin.francony.fr)
 
 ## Architecture Overview
 
 ```
-                              ┌─────────────────────────────────────────┐
-                              │            Raspberry Pi 4                │
-    ┌──────────┐              ├─────────────────────────────────────────┤
-    │  GitHub  │──webhook──►  │  ┌─────────────────────────────────┐    │
-    └──────────┘              │  │     Central Infrastructure        │    │
-                              │  │  ┌───────────────────────────┐   │    │
-    ┌──────────┐              │  │  │    nginx-proxy :80/443    │   │    │
-    │ Internet │──HTTPS────►  │  │  │    (SSL termination)      │   │    │
-    └──────────┘              │  │  └─────────┬─────────────────┘   │    │
-                              │  │            │                      │    │
-                              │  │  ┌─────────┼─────────────────┐   │    │
-                              │  │  │         │                 │   │    │
-                              │  │  ▼         ▼          ▼         │    │
-                              │  │ ┌───┐   ┌───┐   ┌────────┐     │    │
-                              │  │ │Tip│   │MTG│   │Cash-a- │     │    │
-                              │  │ │sy │   │   │   │  lot   │     │    │
-                              │  │ └───┘   └───┘   └────────┘     │    │
-                              │  │                                  │    │
-                              │  │  webhook-server :9000            │    │
-                              │  │  (auto-deployment)               │    │
-                              │  └─────────────────────────────────┘    │
-                              └─────────────────────────────────────────┘
+                    ┌──────────┐
+                    │  GitHub  │──webhook──┐
+                    └──────────┘           │
+                                           ▼
+┌──────────┐     ┌─────────────────────────────────────────┐
+│ Internet │────►│          VPS (OVH, Debian 13)           │
+└──────────┘     │  Pangolin (Traefik + Gerbil + CrowdSec) │
+                 │  SSL termination (Let's Encrypt)         │
+                 └──────────────┬──────────────────────────┘
+                                │ WireGuard tunnel
+                                ▼
+                 ┌─────────────────────────────────────────┐
+                 │       HP ProDesk 400 G5 (Debian 13)     │
+                 │  ┌─────────────────────────────────┐    │
+                 │  │     Docker Containers (8)        │    │
+                 │  │                                  │    │
+                 │  │  ┌───────┐ ┌───┐ ┌──────────┐   │    │
+                 │  │  │ Tipsy │ │MTG│ │Cash-a-lot│   │    │
+                 │  │  └───────┘ └───┘ └──────────┘   │    │
+                 │  │                                  │    │
+                 │  │  ┌──────────┐ ┌────────┐        │    │
+                 │  │  │ postgres │ │ webhook │        │    │
+                 │  │  └──────────┘ └────────┘        │    │
+                 │  │                                  │    │
+                 │  │  ┌──────┐                        │    │
+                 │  │  │ newt │  (WireGuard client)    │    │
+                 │  │  └──────┘                        │    │
+                 │  └─────────────────────────────────┘    │
+                 └─────────────────────────────────────────┘
 ```
 
 ## Services
@@ -40,7 +47,7 @@ Central reverse proxy, auto-deployment webhook, SSL certificates, and shared ser
 | `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
 | `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot (Claude Haiku) |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
-| *(local)* | Calv-a-lot | Copy-trading follower pour Cash-a-lot (chez les amis) |
+| *(local)* | Calv-a-lot | Copy-trading follower for Cash-a-lot (deployed at friends' places, not on ProDesk) |
 
 ## Admin Dashboard
 
@@ -62,38 +69,42 @@ The admin dashboard (`admin.francony.fr`) provides:
 ## Directory Structure
 
 ```
-~/Hosting/                      # On Raspberry Pi
-├── Infra/                      # This repo (central proxy + webhook)
-│   ├── nginx/
-│   │   ├── nginx.conf          # Main proxy configuration
-│   │   └── sites/              # Per-domain site configs (admin, tipsy, mtg, crypto, webhook)
-│   ├── certbot/
-│   │   └── conf/               # Let's Encrypt certificates
+~/Hosting/                          # On ProDesk
+├── Infra/                          # This repo
 │   ├── admin/
-│   │   └── index.html          # Admin dashboard (static, favicon 🏠)
+│   │   └── index.html              # Admin dashboard (static)
+│   ├── compose/
+│   │   ├── bartending.yml          # Bartending full stack (api + frontend)
+│   │   └── bartending.env          # Bartending environment variables
+│   ├── database/
+│   │   ├── 00-create-mtg-database.sh
+│   │   └── 01-create-cashalot-database.sh
+│   ├── newt/
+│   │   ├── docker-compose.yml      # Newt tunnel client (WireGuard → VPS)
+│   │   └── .env
 │   ├── webhook-server/
-│   │   ├── server.py           # Flask webhook + monitoring API
-│   │   ├── deploy.sh           # Deployment script
-│   │   ├── projects/           # Project configs (YAML)
+│   │   ├── server.py               # Flask webhook + monitoring API
+│   │   ├── deploy.sh               # Deployment script
+│   │   ├── projects/               # Project configs (YAML)
 │   │   └── Dockerfile
-│   └── docker-compose.yml
-├── Bartending/                 # Tipsy app (4 repos)
+│   └── docker-compose.yml          # Central: postgres + webhook-server
+├── Bartending/                     # Tipsy app (3 repos)
 │   ├── Bartending_DB/
 │   ├── Bartending_Back/
-│   ├── Bartending_Front/
-│   └── Bartending_Deploy/
-├── MTG-Collection/             # MTG app (1 repo)
-└── Cash-a-lot/                 # AI crypto trading bot
+│   └── Bartending_Front/
+├── MTG-Collection/                 # MTG app (1 repo)
+└── Cash-a-lot/                     # AI crypto trading bot
 ```
 
 ## Docker Stack
 
-| Service | Port | Network | Description |
+| Service | Port (internal) | Network | Description |
 |---------|------|---------|-------------|
-| `nginx-proxy` | 80, 443 | proxy-network + app networks | Central reverse proxy |
-| `postgres` | 5432 (internal) | proxy + app networks | Central PostgreSQL database |
-| `webhook-server` | 9000 (internal) | proxy-network | GitHub webhook receiver |
-| `certbot` | - | - | SSL certificate renewal |
+| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending + mtg + cashalot) |
+| `webhook-server` | 9000 | proxy-network | GitHub webhook receiver + admin API |
+| `newt` | 2112 | all networks | WireGuard tunnel client to VPS (Pangolin) |
+
+> Reverse proxy and SSL are handled by **Pangolin (Traefik)** on the VPS. No local proxy needed.
 
 ## Auto-Deployment
 
@@ -101,9 +112,10 @@ The admin dashboard (`admin.francony.fr`) provides:
 
 1. Push code to GitHub (main/prod branch)
 2. GitHub sends webhook to `webhook.francony.fr/deploy`
-3. Webhook server verifies signature and identifies project
-4. Runs project's `deploy.sh` script
-5. Docker containers are rebuilt and restarted
+3. Webhook server verifies HMAC-SHA256 signature and identifies project
+4. Acquires deployment lock (prevents concurrent deploys)
+5. Runs `deploy.sh`: git pull → docker compose build → up -d --force-recreate
+6. Releases lock, prunes old images
 
 ### Project Configuration
 
@@ -112,49 +124,35 @@ Projects are configured via YAML files in `webhook-server/projects/`:
 **bartending.yml**
 ```yaml
 name: Bartending
-path: Bartending/Bartending_Deploy
-branch:
-  - main
-  - prod
-repos:
-  - Bartending_DB
-  - Bartending_Back
-  - Bartending_Front
-  - Bartending_Deploy
+path: Bartending
+compose_file: /home/bloster/Hosting/Infra/compose/bartending.yml
+branch: [prod, main]
+repos: [Bartending_DB, Bartending_Back, Bartending_Front]
 ```
 
 **mtg.yml**
 ```yaml
 name: MTG-Collection
 path: MTG-Collection
-branch:
-  - main
-repos:
-  - MTG-Collection
+branch: [master, main]
+repos: [MTG-Collection]
 ```
 
 **cashalot.yml**
 ```yaml
 name: Cash-a-lot
 path: Cash-a-lot
-branch:
-  - main
-repos:
-  - Cash-a-lot
+branch: [main]
+repos: [Cash-a-lot]
 ```
 
 **infra.yml**
 ```yaml
 name: Infra
 path: Infra
-branch:
-  - master
-  - main
-repos:
-  - Infra
+branch: [master, main]
+repos: [Infra]
 ```
-
-> Note: Calv-a-lot n'a pas de webhook (déployé localement chez les amis, pas sur le Pi central).
 
 ### Webhook Endpoints
 
@@ -168,7 +166,14 @@ repos:
 
 ## First Time Setup
 
-### 1. Clone Repositories
+### 1. Prerequisites
+
+- HP ProDesk (or any Debian server) with Docker + Docker Compose
+- OVH VPS running Pangolin (Traefik + Gerbil + CrowdSec)
+- Newt tunnel configured between ProDesk and VPS
+- DNS records pointing to VPS IP (Pangolin handles routing)
+
+### 2. Clone Repositories
 
 ```bash
 mkdir -p ~/Hosting
@@ -178,53 +183,55 @@ cd ~/Hosting
 git clone https://github.com/AlexandreFrancony/Infra.git
 
 # Applications
+mkdir -p Bartending
+cd Bartending
+git clone https://github.com/AlexandreFrancony/Bartending_DB.git
+git clone https://github.com/AlexandreFrancony/Bartending_Back.git
+git clone https://github.com/AlexandreFrancony/Bartending_Front.git
+cd ..
+
 git clone https://github.com/AlexandreFrancony/MTG-Collection.git
-# ... clone Bartending repos
+git clone https://github.com/AlexandreFrancony/Cash-a-lot.git
 ```
-
-### 2. Create DNS Records
-
-Add A records pointing to your Raspberry Pi's public IP:
-- `admin.francony.fr`
-- `tipsy.francony.fr`
-- `mtg.francony.fr`
-- `crypto.francony.fr`
-- `webhook.francony.fr`
 
 ### 3. Configure Environment
 
 ```bash
 cd ~/Hosting/Infra
 cp .env.example .env
-nano .env  # Set WEBHOOK_SECRET
+nano .env  # Set POSTGRES_PASSWORD, WEBHOOK_SECRET, etc.
+
+cd newt
+cp .env.example .env
+nano .env  # Set PANGOLIN_ENDPOINT, NEWT_ID, NEWT_SECRET
 ```
 
-### 4. Generate SSL Certificates
+### 4. Start the Stack (Order Matters!)
 
 ```bash
-chmod +x init-ssl.sh
-./init-ssl.sh
-```
-
-### 5. Start the Stack (Order Matters!)
-
-```bash
-# 1. Start apps first (they create their networks)
-cd ~/Hosting/Bartending/Bartending_Deploy
+# 1. Start Newt tunnel first (connects to VPS)
+cd ~/Hosting/Infra/newt
 docker compose up -d
+
+# 2. Start apps (they create their networks)
+cd ~/Hosting/Bartending/Bartending_Front
+docker compose up -d  # Creates bartending_network
 
 cd ~/Hosting/MTG-Collection
-docker compose up -d
+docker compose up -d  # Creates mtg_network
 
 cd ~/Hosting/Cash-a-lot
-docker compose up -d
+docker compose up -d  # Creates cashalot_network
 
-# 2. Start central infrastructure (connects to all networks)
+# 3. Start central infrastructure (connects to all networks)
 cd ~/Hosting/Infra
 docker compose up -d
+
+# 4. Start Bartending full stack (uses centralized compose)
+docker compose -f compose/bartending.yml --env-file compose/bartending.env up -d
 ```
 
-### 6. Configure GitHub Webhooks
+### 5. Configure GitHub Webhooks
 
 For each repository:
 1. Go to **Settings** → **Webhooks** → **Add webhook**
@@ -238,13 +245,16 @@ For each repository:
 ### View Logs
 
 ```bash
-# Nginx proxy logs
-docker compose logs -f nginx-proxy
-
 # Webhook server logs
 docker compose logs -f webhook
 
-# All logs
+# Deployment logs (inside webhook container)
+docker exec webhook-server cat /var/log/infra/deploy.log
+
+# Newt tunnel logs
+cd ~/Hosting/Infra/newt && docker compose logs -f
+
+# All infrastructure logs
 docker compose logs -f
 ```
 
@@ -262,18 +272,6 @@ curl https://admin.francony.fr/api/system
 
 # Docker status
 curl https://admin.francony.fr/api/docker
-
-# SSL certificates
-curl https://admin.francony.fr/api/ssl
-```
-
-### Renew SSL Certificates
-
-Certbot auto-renews every 12 hours. To force renewal:
-
-```bash
-docker compose run --rm certbot certbot renew --force-renewal
-docker compose restart nginx-proxy
 ```
 
 ### Manual Deployment
@@ -288,23 +286,16 @@ curl -X POST https://webhook.francony.fr/deploy \
 
 ## SSL Certificates
 
-All domains use Let's Encrypt certificates managed by certbot:
-
-| Certificate | Domains Covered |
-|-------------|-----------------|
-| `admin.francony.fr` | admin.francony.fr |
-| `webhook.francony.fr` | webhook.francony.fr |
-| `tipsy.francony.fr` | tipsy.francony.fr, mtg.francony.fr |
-| `crypto.francony.fr` | crypto.francony.fr |
-
-Certificates are stored in `certbot/conf/live/` and auto-renewed.
+SSL is managed by **Traefik** (part of Pangolin) on the VPS. Certificates are automatically provisioned and renewed via Let's Encrypt TLS-ALPN-01 challenge. No local certbot or certificate management is needed on the ProDesk.
 
 ## Related Repositories
 
-- [Bartending_Deploy](https://github.com/AlexandreFrancony/Bartending_Deploy) - Tipsy deployment
+- [Bartending_Back](https://github.com/AlexandreFrancony/Bartending_Back) - Tipsy API (Express.js)
+- [Bartending_Front](https://github.com/AlexandreFrancony/Bartending_Front) - Tipsy frontend (React)
+- [Bartending_DB](https://github.com/AlexandreFrancony/Bartending_DB) - Tipsy database (PostgreSQL)
 - [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection) - MTG card tracker
 - [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot
-- [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot) - Copy-trading follower pour Cash-a-lot
+- [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot) - Copy-trading follower for Cash-a-lot
 
 ## License
 
