@@ -1,12 +1,11 @@
 # Bartending V2 - Complete Stack (Tipsy)
-# Deploy on Raspberry Pi 4
+# Deploy on ProDesk (HP ProDesk 400 G5)
 #
-# NOTE: This app is behind the central nginx proxy (Infra repo)
-# No ports are exposed directly - traffic comes through nginx-proxy
+# Traffic routed via Pangolin/Traefik on VPS through Newt tunnel
 # Database is hosted centrally in the Infra stack (postgres container)
 #
-# Structure on Pi:
-#   ~/Hosting/Infra/           <- Central proxy + database + this compose file
+# Structure on ProDesk:
+#   ~/Hosting/Infra/           <- Central database + this compose file
 #   ~/Hosting/Bartending/
 #   ├── Bartending_DB/
 #   ├── Bartending_Back/

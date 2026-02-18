@@ -1,51 +1,20 @@
-# Central Infrastructure - Reverse Proxy, Database & Shared Services
-# Manages all *.francony.fr subdomains
+# Central Infrastructure - Database & Shared Services
+# Manages shared services for all *.francony.fr apps
 #
-# Structure on Pi:
+# Structure on ProDesk:
 #   ~/Hosting/
 #   ├── Infra/           <- this repo
 #   ├── Bartending/      <- Tipsy app
 #   ├── MTG-Collection/  <- MTG app
 #   └── Cash-a-lot/      <- Crypto trading bot
 #
+# Reverse proxy: Pangolin/Traefik on VPS (via Newt tunnel)
+#
 # Usage:
 #   cd ~/Hosting/Infra
 #   docker compose up -d
 
 services:
-  # ============================================
-  # NGINX - Central Reverse Proxy
-  # ============================================
-  nginx-proxy:
-    image: nginx:alpine
-    container_name: nginx-proxy
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/sites:/etc/nginx/sites:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
-      - ./admin:/usr/share/nginx/admin:ro
-      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
-      interval: 120s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    networks:
-      - proxy-network
-      - bartending_network
-      - mtg_network
-      - cashalot_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
   # ============================================
   # POSTGRESQL - Central Database (bartending + mtg_collection + cashalot)
   # ============================================

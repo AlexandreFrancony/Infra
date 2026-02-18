@@ -134,7 +134,7 @@ deploy_compose() {
 
         log_info "Building and deploying containers..."
         docker compose -f "$compose_file" $env_args build
-        docker compose -f "$compose_file" $env_args up -d
+        docker compose -f "$compose_file" $env_args up -d --force-recreate
         log_info "Verifying deployment..."
         docker compose -f "$compose_file" $env_args ps
         return 0
@@ -154,7 +154,7 @@ deploy_compose() {
     log_info "Using compose file: $found_compose"
     log_info "Building and deploying containers..."
     docker compose -f "$found_compose" build
-    docker compose -f "$found_compose" up -d
+    docker compose -f "$found_compose" up -d --force-recreate
 
     log_info "Verifying deployment..."
     docker compose -f "$found_compose" ps
