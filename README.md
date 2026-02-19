@@ -21,11 +21,15 @@ Central database, auto-deployment webhook, and shared services for all *.francon
                  ┌─────────────────────────────────────────┐
                  │       HP ProDesk 400 G5 (Debian 13)     │
                  │  ┌─────────────────────────────────┐    │
-                 │  │     Docker Containers (8)        │    │
+                 │  │     Docker Containers (9)        │    │
                  │  │                                  │    │
                  │  │  ┌───────┐ ┌───┐ ┌──────────┐   │    │
                  │  │  │ Tipsy │ │MTG│ │Cash-a-lot│   │    │
                  │  │  └───────┘ └───┘ └──────────┘   │    │
+                 │  │                                  │    │
+                 │  │  ┌──────────┐                    │    │
+                 │  │  │Calv-a-lot│ (copy-trading)     │    │
+                 │  │  └──────────┘                    │    │
                  │  │                                  │    │
                  │  │  ┌──────────┐ ┌────────┐        │    │
                  │  │  │ postgres │ │ webhook │        │    │
@@ -47,7 +51,7 @@ Central database, auto-deployment webhook, and shared services for all *.francon
 | `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
 | `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot (Claude Haiku) |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
-| *(local)* | Calv-a-lot | Copy-trading follower for Cash-a-lot (deployed at friends' places, not on ProDesk) |
+| `calv.francony.fr` | Calv-a-lot | Copy-trading follower for Cash-a-lot |
 
 ## Admin Dashboard
 
@@ -93,7 +97,8 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   ├── Bartending_Back/
 │   └── Bartending_Front/
 ├── MTG-Collection/                 # MTG app (1 repo)
-└── Cash-a-lot/                     # AI crypto trading bot
+├── Cash-a-lot/                     # AI crypto trading bot
+└── Calv-a-lot/                     # Copy-trading follower
 ```
 
 ## Docker Stack
@@ -146,6 +151,14 @@ branch: [main]
 repos: [Cash-a-lot]
 ```
 
+**calvalot.yml**
+```yaml
+name: Calv-a-lot
+path: Calv-a-lot
+branch: [main]
+repos: [Calv-a-lot]
+```
+
 **infra.yml**
 ```yaml
 name: Infra
@@ -192,6 +205,7 @@ cd ..
 
 git clone https://github.com/AlexandreFrancony/MTG-Collection.git
 git clone https://github.com/AlexandreFrancony/Cash-a-lot.git
+git clone https://github.com/AlexandreFrancony/Calv-a-lot.git
 ```
 
 ### 3. Configure Environment
@@ -222,6 +236,9 @@ docker compose up -d  # Creates mtg_network
 
 cd ~/Hosting/Cash-a-lot
 docker compose up -d  # Creates cashalot_network
+
+cd ~/Hosting/Calv-a-lot
+docker compose up -d  # Creates calv-a-lot_default
 
 # 3. Start central infrastructure (connects to all networks)
 cd ~/Hosting/Infra

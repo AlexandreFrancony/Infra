@@ -23,6 +23,7 @@ services:
       - bartending_network
       - mtg_network
       - cashalot_network
+      - calv-a-lot_default
 
 networks:
   proxy-network:
@@ -32,4 +33,6 @@ networks:
   mtg_network:
     external: true
   cashalot_network:
+    external: true
+  calv-a-lot_default:
     external: true
