@@ -206,7 +206,8 @@ def deploy():
                 'DEPLOY_COMPOSE_FILE': config.get('compose_file', ''),
                 'COMPOSE_DIR': config.get('compose_dir', ''),
                 'REPOS': ','.join(config.get('repos', [])),
-                'BRANCH': branch
+                'BRANCH': branch,
+                'SERVICES': ','.join(config.get('services', [])),
             }
             # Supprimer COMPOSE_FILE de l'env pour ne pas interférer avec docker compose
             env.pop('COMPOSE_FILE', None)

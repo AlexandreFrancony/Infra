@@ -1,5 +1,5 @@
 # Infra - Deployment Configuration
-# git pull + docker compose up (rebuild nginx si besoin, pas le webhook)
+# Only rebuild webhook service, not postgres (avoids killing the database)
 name: Infra
 path: Infra
 branch:
@@ -7,3 +7,5 @@ branch:
   - main
 repos:
   - Infra
+services:
+  - webhook

@@ -132,9 +132,16 @@ deploy_compose() {
             env_args="--env-file $env_file"
         fi
 
-        log_info "Building and deploying containers..."
-        docker compose -f "$compose_file" $env_args build
-        docker compose -f "$compose_file" $env_args up -d --force-recreate
+        if [ -n "$SERVICES" ]; then
+            IFS=',' read -ra SERVICE_LIST <<< "$SERVICES"
+            log_info "Building and deploying services: ${SERVICE_LIST[*]}"
+            docker compose -f "$compose_file" $env_args build "${SERVICE_LIST[@]}"
+            docker compose -f "$compose_file" $env_args up -d --force-recreate "${SERVICE_LIST[@]}"
+        else
+            log_info "Building and deploying all containers..."
+            docker compose -f "$compose_file" $env_args build
+            docker compose -f "$compose_file" $env_args up -d --force-recreate
+        fi
         log_info "Verifying deployment..."
         docker compose -f "$compose_file" $env_args ps
         return 0
@@ -152,9 +159,18 @@ deploy_compose() {
     fi
 
     log_info "Using compose file: $found_compose"
-    log_info "Building and deploying containers..."
-    docker compose -f "$found_compose" build
-    docker compose -f "$found_compose" up -d --force-recreate
+
+    # If specific services are defined, only rebuild those (avoids killing unrelated services)
+    if [ -n "$SERVICES" ]; then
+        IFS=',' read -ra SERVICE_LIST <<< "$SERVICES"
+        log_info "Building and deploying services: ${SERVICE_LIST[*]}"
+        docker compose -f "$found_compose" build "${SERVICE_LIST[@]}"
+        docker compose -f "$found_compose" up -d --force-recreate "${SERVICE_LIST[@]}"
+    else
+        log_info "Building and deploying all containers..."
+        docker compose -f "$found_compose" build
+        docker compose -f "$found_compose" up -d --force-recreate
+    fi
 
     log_info "Verifying deployment..."
     docker compose -f "$found_compose" ps
