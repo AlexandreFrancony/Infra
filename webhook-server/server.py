@@ -270,22 +270,15 @@ def reload_config():
 
 @app.route('/api/system', methods=['GET'])
 def api_system():
-    """Get Raspberry Pi system stats"""
+    """Get system stats"""
     try:
-        # CPU usage
+        # CPU usage (dynamic core count)
         cpu_percent = 0.0
         try:
-            with open('/proc/stat', 'r') as f:
-                lines = f.readlines()
-            cpu_line = lines[0].split()
-            user, nice, system, idle, iowait, irq, softirq = map(int, cpu_line[1:8])
-            total = user + nice + system + idle + iowait + irq + softirq
-            idle_time = idle + iowait
-            # Simple approximation - use load average instead for accuracy
+            num_cores = os.cpu_count() or 1
             with open('/proc/loadavg', 'r') as f:
                 load = float(f.read().split()[0])
-            # Raspberry Pi 4 has 4 cores, so 100% per core
-            cpu_percent = min(load * 25, 100)  # Approximate percentage
+            cpu_percent = min(load * (100.0 / num_cores), 100)
         except:
             pass
 
@@ -327,6 +320,35 @@ def api_system():
         except:
             pass
 
+        # Network
+        net_rx_total = 0
+        net_tx_total = 0
+        net_rx_rate = 0.0
+        net_tx_rate = 0.0
+        try:
+            with open('/proc/net/dev', 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if ':' not in line or line.startswith('Inter') or line.startswith('face'):
+                        continue
+                    iface, data = line.split(':', 1)
+                    iface = iface.strip()
+                    if iface == 'lo':
+                        continue
+                    parts = data.split()
+                    net_rx_total += int(parts[0])
+                    net_tx_total += int(parts[8])
+
+            now = time.time()
+            if hasattr(api_system, '_prev_net'):
+                dt = now - api_system._prev_net['time']
+                if dt > 0:
+                    net_rx_rate = (net_rx_total - api_system._prev_net['rx']) / dt
+                    net_tx_rate = (net_tx_total - api_system._prev_net['tx']) / dt
+            api_system._prev_net = {'time': now, 'rx': net_rx_total, 'tx': net_tx_total}
+        except:
+            pass
+
         # Uptime
         uptime_str = ""
         try:
@@ -358,6 +380,12 @@ def api_system():
                 'used': disk_used
             },
             'temperature': temperature,
+            'network': {
+                'rx_total': net_rx_total,
+                'tx_total': net_tx_total,
+                'rx_rate': max(net_rx_rate, 0),
+                'tx_rate': max(net_tx_rate, 0)
+            },
             'uptime': uptime_str
         })
 

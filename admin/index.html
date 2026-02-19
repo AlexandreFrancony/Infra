@@ -101,21 +101,7 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Login Modal -->
-    <div id="loginOverlay" style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center;">
-        <div class="card p-8 rounded-xl" style="min-width:320px; max-width:400px;">
-            <h2 class="text-xl font-bold mb-4" style="color:var(--text-primary)">🏠 Francony Admin</h2>
-            <p class="text-sm mb-4" style="color:var(--text-secondary)">Authentification requise</p>
-            <form onsubmit="event.preventDefault();doLogin()">
-              <input id="loginUser" name="username" type="text" autocomplete="username" placeholder="Utilisateur" class="w-full p-2 rounded mb-3" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
-              <input id="loginPass" name="password" type="password" autocomplete="current-password" placeholder="Mot de passe" class="w-full p-2 rounded mb-4" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);">
-              <button type="submit" style="background:var(--accent);color:#fff;" class="w-full py-2 rounded font-semibold hover:opacity-90 transition-opacity">Connexion</button>
-            </form>
-            <p id="loginError" class="text-sm mt-2" style="color:var(--negative);display:none;">Identifiants incorrects</p>
-        </div>
-    </div>
-
-    <div id="mainContent" style="display:none;" class="container mx-auto px-4 py-8 max-w-4xl">
+    <div id="mainContent" class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Header -->
         <header class="text-center mb-12 relative">
             <div class="absolute right-0 top-0">
@@ -181,21 +167,21 @@
 
         <!-- Dropdowns Container -->
         <div class="space-y-4">
-            <!-- Raspberry Pi Stats Dropdown -->
+            <!-- System Stats Dropdown -->
             <div class="card rounded-xl">
-                <button onclick="toggleDropdown('rasp-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
+                <button onclick="toggleDropdown('system-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-semibold">Raspberry Pi</span>
-                            <span id="rasp-status" class="text-xs text-muted">Chargement...</span>
+                            <span class="font-semibold">HP ProDesk</span>
+                            <span id="system-status" class="text-xs text-muted">Chargement...</span>
                         </div>
                     </div>
-                    <svg id="rasp-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg id="system-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div id="rasp-stats" class="dropdown-content">
+                <div id="system-stats" class="dropdown-content">
                     <div class="px-5 pb-5 space-y-4">
                         <!-- CPU -->
                         <div>
@@ -231,10 +217,21 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-secondary">Temperature</span>
-                                <span id="temp-value" class="font-medium">--C</span>
+                                <span id="temp-value" class="font-medium">--°C</span>
                             </div>
                             <div class="progress-bar">
                                 <div id="temp-bar" class="progress-fill bg-orange-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Network -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-secondary">Reseau</span>
+                                <span id="net-value" class="font-medium text-xs">-- / --</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-muted">
+                                <span id="net-rx">↓ --</span>
+                                <span id="net-tx">↑ --</span>
                             </div>
                         </div>
                         <!-- Uptime -->
@@ -291,43 +288,12 @@
 
         <!-- Footer -->
         <footer class="text-center text-muted text-sm mt-12">
-            <p>Hosted on Raspberry Pi 4 - Francony Infrastructure</p>
+            <p>Hosted on HP ProDesk 400 G5 - Francony Infrastructure</p>
             <p class="text-xs mt-1">Last update: <span id="last-update">--</span></p>
         </footer>
     </div>
 
     <script>
-        // ── Auth ──────────────────────────────────────
-        let _authHeader = null;
-
-        function doLogin() {
-            const user = document.getElementById('loginUser').value;
-            const pass = document.getElementById('loginPass').value;
-            const header = 'Basic ' + btoa(user + ':' + pass);
-
-            // Tester directement un endpoint API protégé
-            fetch('/api/system', { headers: { 'Authorization': header } })
-                .then(resp => {
-                    if (resp.ok) {
-                        _authHeader = header;
-                        document.getElementById('loginOverlay').style.display = 'none';
-                        document.getElementById('mainContent').style.display = '';
-                        document.getElementById('loginError').style.display = 'none';
-                        startDashboard();
-                    } else {
-                        document.getElementById('loginError').style.display = 'block';
-                    }
-                })
-                .catch(() => {
-                    document.getElementById('loginError').style.display = 'block';
-                });
-        }
-
-        function authFetch(url) {
-            const headers = _authHeader ? { 'Authorization': _authHeader } : {};
-            return fetch(url, { headers });
-        }
-
         // XSS protection
         function esc(s) {
             if (s == null) return '';
@@ -372,9 +338,9 @@
             return 'bg-red-500';
         }
 
-        async function fetchRaspStats() {
+        async function fetchSystemStats() {
             try {
-                const response = await authFetch('/api/system');
+                const response = await fetch('/api/system');
                 const data = await response.json();
 
                 document.getElementById('cpu-value').textContent = data.cpu.percent.toFixed(1) + '%';
@@ -392,25 +358,31 @@
                 document.getElementById('disk-bar').className = 'progress-fill ' + getBarColor(diskPercent, 'disk');
 
                 const tempPercent = (data.temperature / 85) * 100;
-                document.getElementById('temp-value').textContent = data.temperature.toFixed(1) + 'C';
+                document.getElementById('temp-value').textContent = data.temperature.toFixed(1) + '°C';
                 document.getElementById('temp-bar').style.width = Math.min(tempPercent, 100) + '%';
                 document.getElementById('temp-bar').className = 'progress-fill ' + getBarColor(tempPercent, 'temp');
 
+                if (data.network) {
+                    document.getElementById('net-rx').textContent = '↓ ' + formatBytes(data.network.rx_rate) + '/s';
+                    document.getElementById('net-tx').textContent = '↑ ' + formatBytes(data.network.tx_rate) + '/s';
+                    document.getElementById('net-value').textContent = '↓ ' + formatBytes(data.network.rx_total) + ' / ↑ ' + formatBytes(data.network.tx_total);
+                }
+
                 document.getElementById('uptime-value').textContent = data.uptime;
 
-                document.getElementById('rasp-status').textContent = 'Online';
-                document.getElementById('rasp-status').style.color = 'var(--positive)';
+                document.getElementById('system-status').textContent = 'Online';
+                document.getElementById('system-status').style.color = 'var(--positive)';
 
             } catch (error) {
-                console.error('Failed to fetch rasp stats:', error);
-                document.getElementById('rasp-status').textContent = 'Offline';
-                document.getElementById('rasp-status').style.color = 'var(--negative)';
+                console.error('Failed to fetch system stats:', error);
+                document.getElementById('system-status').textContent = 'Offline';
+                document.getElementById('system-status').style.color = 'var(--negative)';
             }
         }
 
         async function fetchDockerStats() {
             try {
-                const response = await authFetch('/api/docker');
+                const response = await fetch('/api/docker');
                 const data = await response.json();
 
                 const containersDiv = document.getElementById('docker-containers');
@@ -441,7 +413,7 @@
 
         async function fetchSSLStats() {
             try {
-                const response = await authFetch('/api/ssl');
+                const response = await fetch('/api/ssl');
                 const data = await response.json();
 
                 const certsDiv = document.getElementById('ssl-certificates');
@@ -502,16 +474,15 @@
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
         }
 
-        // Start dashboard after login
-        function startDashboard() {
-            fetchRaspStats();
+        // Auto-start dashboard (auth handled by Pangolin)
+        (function startDashboard() {
+            fetchSystemStats();
             fetchDockerStats();
             fetchSSLStats();
             updateTimestamp();
 
-            // Refresh every 10 seconds (SSL every 60s)
             setInterval(() => {
-                fetchRaspStats();
+                fetchSystemStats();
                 fetchDockerStats();
                 updateTimestamp();
             }, 10000);
@@ -519,7 +490,7 @@
             setInterval(() => {
                 fetchSSLStats();
             }, 60000);
-        }
+        })();
     </script>
 </body>
 </html>
