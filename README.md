@@ -68,7 +68,6 @@ The admin dashboard (`admin.francony.fr`) provides:
 |----------|-------------|
 | `/api/system` | CPU, RAM, Disk, Temperature, Uptime |
 | `/api/docker` | Docker container status |
-| `/api/ssl` | SSL certificate expiry info |
 
 ## Directory Structure
 
