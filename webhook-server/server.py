@@ -463,6 +463,123 @@ def admin_static(filename):
     return jsonify({'error': 'Not found'}), 404
 
 
+# ============================================
+# Clanky Agent API (SSH to VPS)
+# ============================================
+
+CLANKY_SSH_HOST = os.environ.get('CLANKY_SSH_HOST', '89.167.66.201')
+CLANKY_SSH_USER = os.environ.get('CLANKY_SSH_USER', 'bloster')
+CLANKY_SSH_OPTS = [
+    'ssh', '-o', 'StrictHostKeyChecking=no',
+    '-o', 'ConnectTimeout=5',
+    '-o', 'BatchMode=yes',
+    f'{CLANKY_SSH_USER}@{CLANKY_SSH_HOST}'
+]
+
+
+def ssh_exec(command, timeout=10):
+    """Execute a command on the Clanky VPS via SSH"""
+    try:
+        result = subprocess.run(
+            CLANKY_SSH_OPTS + [command],
+            capture_output=True, text=True, timeout=timeout
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+        return None
+    except (subprocess.TimeoutExpired, Exception):
+        return None
+
+
+@app.route('/api/clanky', methods=['GET'])
+def api_clanky():
+    """Get Clanky agent status via SSH"""
+    try:
+        # Run all SSH commands in parallel threads for speed
+        results = {}
+
+        def run_check(key, cmd):
+            results[key] = ssh_exec(cmd)
+
+        checks = {
+            'process': 'pgrep -f "automaton.*index.js" > /dev/null && echo running || echo stopped',
+            'screen': 'screen -ls 2>/dev/null | grep -o "clanky" || echo none',
+            'credits': 'sqlite3 /root/.automaton/state.db "SELECT value FROM kv WHERE key=\'credits_balance\'" 2>/dev/null || echo unknown',
+            'soul_updated': 'stat -c %Y /root/.automaton/SOUL.md 2>/dev/null || echo 0',
+            'uptime': 'cat /proc/uptime 2>/dev/null | cut -d. -f1',
+            'last_log': 'tail -1 /root/.automaton/logs/agent.log 2>/dev/null || echo ""',
+        }
+
+        threads = []
+        for key, cmd in checks.items():
+            t = threading.Thread(target=run_check, args=(key, cmd))
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join(timeout=15)
+
+        # Parse process status
+        process_running = results.get('process') == 'running'
+        screen_active = results.get('screen', 'none') != 'none'
+
+        # Parse credits
+        credits_raw = results.get('credits', 'unknown')
+        try:
+            credits_balance = float(credits_raw) if credits_raw and credits_raw != 'unknown' else None
+        except (ValueError, TypeError):
+            credits_balance = None
+
+        # Parse soul last updated
+        soul_ts = results.get('soul_updated', '0')
+        try:
+            soul_updated = datetime.fromtimestamp(int(soul_ts)).isoformat() if soul_ts and soul_ts != '0' else None
+        except (ValueError, TypeError):
+            soul_updated = None
+
+        # Parse uptime
+        uptime_raw = results.get('uptime')
+        vps_uptime = None
+        if uptime_raw:
+            try:
+                secs = int(uptime_raw)
+                days = secs // 86400
+                hours = (secs % 86400) // 3600
+                mins = (secs % 3600) // 60
+                if days > 0:
+                    vps_uptime = f"{days}j {hours}h {mins}m"
+                elif hours > 0:
+                    vps_uptime = f"{hours}h {mins}m"
+                else:
+                    vps_uptime = f"{mins}m"
+            except ValueError:
+                pass
+
+        # Determine overall status
+        if process_running and screen_active:
+            status = 'running'
+        elif screen_active:
+            status = 'screen_only'
+        elif results.get('process') is None:
+            status = 'unreachable'
+        else:
+            status = 'stopped'
+
+        return jsonify({
+            'status': status,
+            'process_running': process_running,
+            'screen_active': screen_active,
+            'credits_balance': credits_balance,
+            'soul_last_updated': soul_updated,
+            'vps_uptime': vps_uptime,
+            'last_log': results.get('last_log', ''),
+            'vps_host': CLANKY_SSH_HOST
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get Clanky stats: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
 if __name__ == '__main__':
     logger.info(f"Starting webhook server")
     logger.info(f"Hosting directory: {HOSTING_DIR}")

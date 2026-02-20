@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    openssh-client \
     && curl -fsSL https://get.docker.com | sh \
     && rm -rf /var/lib/apt/lists/*
 

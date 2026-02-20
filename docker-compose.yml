@@ -76,6 +76,8 @@ services:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
       HOSTING_DIR: /home/bloster/Hosting
       PORT: 9000
+      CLANKY_SSH_HOST: ${CLANKY_SSH_HOST:-89.167.66.201}
+      CLANKY_SSH_USER: ${CLANKY_SSH_USER:-bloster}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Mount at same path so docker compose build contexts work correctly
@@ -83,6 +85,7 @@ services:
       # Git credentials pour que le webhook puisse pull les repos privés
       - /home/bloster/.git-credentials:/root/.git-credentials:ro
       - /home/bloster/.gitconfig:/root/.gitconfig:ro
+      - /home/bloster/.ssh:/root/.ssh:ro
       - webhook_logs:/var/log/infra
     networks:
       - proxy-network

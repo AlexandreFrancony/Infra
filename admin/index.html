@@ -76,8 +76,8 @@
         .text-muted { color: var(--text-muted) !important; }
         .border-theme { border-color: var(--border) !important; }
 
-        .dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .dropdown-content.open { max-height: 500px; }
+        .dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
+        .dropdown-content.open { max-height: 2000px; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; }
         .status-running { background-color: var(--positive); }
         .status-stopped { background-color: var(--negative); }
@@ -263,6 +263,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Clanky Agent Dropdown -->
+            <div class="card rounded-xl">
+                <button onclick="toggleDropdown('clanky-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">Clanky</span>
+                            <span id="clanky-status" class="text-xs text-muted">Chargement...</span>
+                        </div>
+                    </div>
+                    <svg id="clanky-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="clanky-stats" class="dropdown-content">
+                    <div id="clanky-details" class="px-5 pb-5 space-y-3">
+                        <div class="text-muted text-sm">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SSL Certificates Dropdown -->
+            <div class="card rounded-xl">
+                <button onclick="toggleDropdown('ssl-stats')" class="dropdown-btn w-full p-5 flex items-center justify-between rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">Certificats SSL</span>
+                            <span id="ssl-summary" class="text-xs text-muted">Chargement...</span>
+                        </div>
+                    </div>
+                    <svg id="ssl-stats-arrow" class="w-5 h-5 text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="ssl-stats" class="dropdown-content">
+                    <div id="ssl-certificates" class="px-5 pb-5 space-y-2">
+                        <div class="text-muted text-sm">Chargement des certificats...</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -390,6 +432,187 @@
             }
         }
 
+        async function fetchClankyStats() {
+            try {
+                const response = await fetch('/api/clanky');
+                const data = await response.json();
+
+                const statusEl = document.getElementById('clanky-status');
+                const detailsEl = document.getElementById('clanky-details');
+
+                // Status badge
+                const statusMap = {
+                    'running': { text: 'Running', color: 'var(--positive)' },
+                    'stopped': { text: 'Stopped', color: 'var(--negative)' },
+                    'screen_only': { text: 'Screen only', color: 'var(--warning)' },
+                    'unreachable': { text: 'Unreachable', color: 'var(--negative)' },
+                    'error': { text: 'Error', color: 'var(--negative)' }
+                };
+                const st = statusMap[data.status] || statusMap['error'];
+                statusEl.textContent = st.text;
+                statusEl.style.color = st.color;
+
+                // Credits display
+                let creditsHtml = '';
+                if (data.credits_balance !== null && data.credits_balance !== undefined) {
+                    const credits = parseFloat(data.credits_balance);
+                    const creditsColor = credits < 1 ? 'var(--negative)' : credits < 5 ? 'var(--warning)' : 'var(--positive)';
+                    creditsHtml = `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-secondary">Credits Conway</span>
+                            <span class="font-medium" style="color:${creditsColor}">$${credits.toFixed(2)}</span>
+                        </div>`;
+                } else {
+                    creditsHtml = `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-secondary">Credits Conway</span>
+                            <span class="font-medium text-muted">--</span>
+                        </div>`;
+                }
+
+                // Soul last updated
+                let soulHtml = '';
+                if (data.soul_last_updated) {
+                    const soulDate = new Date(data.soul_last_updated);
+                    const ago = timeSince(soulDate);
+                    soulHtml = `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-secondary">SOUL.md</span>
+                            <span class="font-medium">${ago}</span>
+                        </div>`;
+                }
+
+                // VPS uptime
+                let uptimeHtml = '';
+                if (data.vps_uptime) {
+                    uptimeHtml = `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-secondary">VPS Uptime</span>
+                            <span class="font-medium">${esc(data.vps_uptime)}</span>
+                        </div>`;
+                }
+
+                // Process info
+                const processIcon = data.process_running
+                    ? '<div class="status-dot status-running"></div>'
+                    : '<div class="status-dot status-stopped"></div>';
+                const screenIcon = data.screen_active
+                    ? '<div class="status-dot status-running"></div>'
+                    : '<div class="status-dot status-stopped"></div>';
+
+                // Last log line
+                let logHtml = '';
+                if (data.last_log) {
+                    logHtml = `
+                        <div class="pt-2" style="border-top: 1px solid var(--border);">
+                            <span class="text-xs text-muted">Dernier log</span>
+                            <p class="text-xs font-mono mt-1 text-secondary" style="word-break:break-all;">${esc(data.last_log).substring(0, 200)}</p>
+                        </div>`;
+                }
+
+                detailsEl.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between py-2 px-3 card-inner rounded-lg">
+                            <div class="flex items-center gap-3">
+                                ${processIcon}
+                                <span class="text-sm font-medium">Process automaton</span>
+                            </div>
+                            <span class="text-xs text-muted">${data.process_running ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 px-3 card-inner rounded-lg">
+                            <div class="flex items-center gap-3">
+                                ${screenIcon}
+                                <span class="text-sm font-medium">Screen session</span>
+                            </div>
+                            <span class="text-xs text-muted">${data.screen_active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        <div class="pt-2 space-y-2" style="border-top: 1px solid var(--border);">
+                            ${creditsHtml}
+                            ${soulHtml}
+                            ${uptimeHtml}
+                        </div>
+                        <div class="text-xs text-muted text-right">VPS: ${esc(data.vps_host)}</div>
+                        ${logHtml}
+                    </div>`;
+
+            } catch (error) {
+                console.error('Failed to fetch Clanky stats:', error);
+                const statusEl = document.getElementById('clanky-status');
+                statusEl.textContent = 'Erreur';
+                statusEl.style.color = 'var(--negative)';
+            }
+        }
+
+        function timeSince(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'A l\'instant';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `il y a ${minutes}m`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `il y a ${hours}h`;
+            const days = Math.floor(hours / 24);
+            return `il y a ${days}j`;
+        }
+
+        async function fetchSSLStats() {
+            try {
+                const response = await fetch('/api/ssl');
+                const data = await response.json();
+
+                const certsDiv = document.getElementById('ssl-certificates');
+                const total = data.certificates.length;
+                const expiring = data.certificates.filter(c => c.status === 'expiring').length;
+
+                const summaryEl = document.getElementById('ssl-summary');
+                if (expiring > 0) {
+                    summaryEl.textContent = `${expiring} expire bientot`;
+                    summaryEl.style.color = 'var(--warning)';
+                } else {
+                    summaryEl.textContent = `${total} certificat${total > 1 ? 's' : ''}`;
+                    summaryEl.style.color = 'var(--positive)';
+                }
+
+                if (data.certificates.length === 0) {
+                    certsDiv.innerHTML = '<div class="text-muted text-sm">Aucun certificat trouve</div>';
+                    return;
+                }
+
+                certsDiv.innerHTML = data.certificates.map(cert => {
+                    let statusColor = 'var(--positive)';
+                    let statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                    let bgClass = 'card-inner';
+
+                    if (cert.status === 'expiring') {
+                        statusColor = 'var(--warning)';
+                        statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                    } else if (cert.status === 'expired' || cert.status === 'error') {
+                        statusColor = 'var(--negative)';
+                        statusIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+                    }
+
+                    const domains = cert.domains.map(d => esc(d)).join(', ');
+                    const daysText = cert.days_left !== null ? cert.days_left + 'j restants' : 'Erreur';
+
+                    return '<div class="py-3 px-3 ' + bgClass + ' rounded-lg">' +
+                        '<div class="flex items-center justify-between mb-1">' +
+                            '<div class="flex items-center gap-2">' +
+                                '<span style="color:' + statusColor + '">' + statusIcon + '</span>' +
+                                '<span class="text-sm font-medium">' + esc(cert.name) + '</span>' +
+                            '</div>' +
+                            '<span class="text-xs" style="color:' + statusColor + '">' + esc(daysText) + '</span>' +
+                        '</div>' +
+                        '<p class="text-xs text-muted ml-6">' + domains + '</p>' +
+                    '</div>';
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to fetch SSL stats:', error);
+                var summaryEl = document.getElementById('ssl-summary');
+                summaryEl.textContent = 'Erreur';
+                summaryEl.style.color = 'var(--negative)';
+            }
+        }
+
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
         }
@@ -398,14 +621,26 @@
         (function startDashboard() {
             fetchSystemStats();
             fetchDockerStats();
+            fetchClankyStats();
+            fetchSSLStats();
             updateTimestamp();
 
+            // Refresh every 10 seconds (system + docker)
             setInterval(() => {
                 fetchSystemStats();
                 fetchDockerStats();
                 updateTimestamp();
             }, 10000);
 
+            // Refresh every 30 seconds (clanky - SSH calls are slower)
+            setInterval(() => {
+                fetchClankyStats();
+            }, 30000);
+
+            // Refresh every 60 seconds (SSL)
+            setInterval(() => {
+                fetchSSLStats();
+            }, 60000);
         })();
     </script>
 </body>
