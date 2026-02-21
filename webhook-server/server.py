@@ -81,6 +81,7 @@ def verify_signature(f):
     return decorated_function
 
 
+@app.route('/', methods=['GET'])
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint (minimal info)"""
