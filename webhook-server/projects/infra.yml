@@ -1,5 +1,6 @@
 # Infra - Deployment Configuration
-# Only rebuild webhook service, not postgres (avoids killing the database)
+# NOTE: webhook is excluded — it cannot self-deploy (kills itself mid-process)
+# To update webhook-server: ssh prodesk "cd ~/Hosting/Infra && docker compose up -d --build webhook"
 name: Infra
 path: Infra
 branch:
@@ -8,6 +9,5 @@ branch:
 repos:
   - Infra
 services:
-  - webhook
   - homarr
   - pihole
