@@ -105,10 +105,35 @@ services:
     networks:
       - proxy-network
 
+  # ============================================
+  # PI-HOLE - DNS Ad Blocker
+  # ============================================
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    expose:
+      - "80"
+    environment:
+      TZ: 'Europe/Paris'
+      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD:?Pi-hole password required}
+      FTLCONF_dns_listeningMode: 'ALL'
+      FTLCONF_dns_upstreams: '8.8.8.8;8.8.4.4'
+    volumes:
+      - pihole_data:/etc/pihole
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - proxy-network
+
 volumes:
   postgres_data:
   webhook_logs:
   homarr_data:
+  pihole_data:
 
 networks:
   proxy-network:

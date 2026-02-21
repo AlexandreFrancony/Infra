@@ -10,3 +10,4 @@ repos:
 services:
   - webhook
   - homarr
+  - pihole
