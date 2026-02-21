@@ -9,3 +9,4 @@ repos:
   - Infra
 services:
   - webhook
+  - homarr

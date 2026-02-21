@@ -76,8 +76,6 @@ services:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
       HOSTING_DIR: /home/bloster/Hosting
       PORT: 9000
-      CLANKY_SSH_HOST: ${CLANKY_SSH_HOST:-89.167.66.201}
-      CLANKY_SSH_USER: ${CLANKY_SSH_USER:-bloster}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Mount at same path so docker compose build contexts work correctly
@@ -90,9 +88,27 @@ services:
     networks:
       - proxy-network
 
+  # ============================================
+  # HOMARR - Admin Dashboard
+  # ============================================
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    environment:
+      SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_KEY:?Homarr encryption key required}
+    volumes:
+      - homarr_data:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "7575"
+    networks:
+      - proxy-network
+
 volumes:
   postgres_data:
   webhook_logs:
+  homarr_data:
 
 networks:
   proxy-network:
