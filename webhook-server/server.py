@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Central Deployment Webhook Server
+Central Deployment Webhook Server + Admin Dashboard
 Handles GitHub webhooks for all projects in ~/Hosting/
+Serves admin dashboard with system monitoring APIs
 """
 
 import os
@@ -11,11 +12,14 @@ import subprocess
 import logging
 import threading
 import time
+import json
 import yaml
+import urllib.request
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from functools import wraps
 
+ADMIN_DIR = os.path.join(os.path.dirname(__file__), 'admin')
 app = Flask(__name__)
 
 # Configuration
@@ -38,6 +42,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Network rate tracking
+_prev_net = {'time': 0, 'rx': 0, 'tx': 0}
 
 # Load project configurations
 def load_project_configs():
@@ -81,15 +88,175 @@ def verify_signature(f):
     return decorated_function
 
 
-@app.route('/', methods=['GET'])
+# ============================================
+# ADMIN DASHBOARD
+# ============================================
+
+@app.route('/')
+def admin_index():
+    """Serve admin dashboard"""
+    return send_from_directory(ADMIN_DIR, 'index.html')
+
+
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint (minimal info)"""
+    """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat()
     })
 
+
+@app.route('/api/system', methods=['GET'])
+def api_system():
+    """ProDesk system stats from /proc/"""
+    global _prev_net
+    data = {}
+
+    try:
+        with open('/proc/loadavg') as f:
+            load1 = float(f.read().split()[0])
+        cores = os.cpu_count() or 1
+        data['cpu'] = {'percent': round(min(load1 / cores * 100, 100), 1)}
+    except Exception:
+        data['cpu'] = {'percent': 0}
+
+    try:
+        with open('/proc/meminfo') as f:
+            info = {}
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    info[parts[0].rstrip(':')] = int(parts[1]) * 1024
+            total = info.get('MemTotal', 0)
+            available = info.get('MemAvailable', 0)
+            data['memory'] = {
+                'total': total,
+                'used': total - available,
+                'available': available
+            }
+    except Exception:
+        data['memory'] = {'total': 0, 'used': 0, 'available': 0}
+
+    try:
+        result = subprocess.run(['df', '-B1', '/'], capture_output=True, text=True, timeout=5)
+        parts = result.stdout.strip().split('\n')[-1].split()
+        data['disk'] = {'total': int(parts[1]), 'used': int(parts[2])}
+    except Exception:
+        data['disk'] = {'total': 0, 'used': 0}
+
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp') as f:
+            data['temperature'] = round(int(f.read().strip()) / 1000, 1)
+    except Exception:
+        data['temperature'] = None
+
+    try:
+        with open('/proc/net/dev') as f:
+            rx_total = tx_total = 0
+            for line in f:
+                if ':' in line and 'lo' not in line:
+                    parts = line.split(':')[1].split()
+                    rx_total += int(parts[0])
+                    tx_total += int(parts[8])
+        now = time.time()
+        dt = now - _prev_net['time'] if _prev_net['time'] else 0
+        rx_rate = (rx_total - _prev_net['rx']) / dt if dt > 0 else 0
+        tx_rate = (tx_total - _prev_net['tx']) / dt if dt > 0 else 0
+        _prev_net = {'time': now, 'rx': rx_total, 'tx': tx_total}
+        data['network'] = {
+            'rx_total': rx_total, 'tx_total': tx_total,
+            'rx_rate': round(rx_rate), 'tx_rate': round(tx_rate)
+        }
+    except Exception:
+        data['network'] = {'rx_total': 0, 'tx_total': 0, 'rx_rate': 0, 'tx_rate': 0}
+
+    try:
+        with open('/proc/uptime') as f:
+            secs = int(float(f.read().split()[0]))
+        days, rem = divmod(secs, 86400)
+        hours, rem = divmod(rem, 3600)
+        mins = rem // 60
+        parts = []
+        if days:
+            parts.append(f"{days}j")
+        if hours:
+            parts.append(f"{hours}h")
+        parts.append(f"{mins}m")
+        data['uptime'] = ' '.join(parts)
+    except Exception:
+        data['uptime'] = '?'
+
+    return jsonify(data)
+
+
+@app.route('/api/docker', methods=['GET'])
+def api_docker():
+    """Docker container list and status"""
+    try:
+        result = subprocess.run(
+            ['docker', 'ps', '-a', '--format', '{{json .}}'],
+            capture_output=True, text=True, timeout=10
+        )
+        containers = []
+        for line in result.stdout.strip().split('\n'):
+            if not line:
+                continue
+            c = json.loads(line)
+            containers.append({
+                'name': c.get('Names', ''),
+                'state': c.get('State', ''),
+                'status': c.get('Status', ''),
+                'image': c.get('Image', '').split(':')[0].split('/')[-1]
+            })
+
+        # Sort: running first, then alphabetically
+        containers.sort(key=lambda x: (0 if x['state'] == 'running' else 1, x['name']))
+        running = sum(1 for c in containers if c['state'] == 'running')
+
+        return jsonify({
+            'containers': containers,
+            'total': len(containers),
+            'running': running
+        })
+    except Exception as e:
+        logger.error(f"Docker API error: {e}")
+        return jsonify({'containers': [], 'total': 0, 'running': 0, 'error': str(e)})
+
+
+@app.route('/api/pihole', methods=['GET'])
+def api_pihole():
+    """Pi-hole stats via internal Docker network"""
+    try:
+        req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        return jsonify({
+            'queries': data.get('dns_queries_today', data.get('queries', {}).get('total', 0)),
+            'blocked': data.get('ads_blocked_today', data.get('queries', {}).get('blocked', 0)),
+            'percent': data.get('ads_percentage_today', data.get('queries', {}).get('percent_blocked', 0)),
+            'status': data.get('status', 'unknown')
+        })
+    except Exception:
+        # Try Pi-hole v6 API format
+        try:
+            req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                raw = json.loads(resp.read())
+            return jsonify({
+                'queries': raw.get('queries', {}).get('total', 0),
+                'blocked': raw.get('queries', {}).get('blocked', 0),
+                'percent': raw.get('queries', {}).get('percent_blocked', 0),
+                'status': 'enabled'
+            })
+        except Exception as e:
+            logger.error(f"Pi-hole API error: {e}")
+            return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
+
+
+# ============================================
+# WEBHOOK ENDPOINTS
+# ============================================
 
 @app.route('/projects', methods=['GET'])
 @verify_signature
@@ -188,9 +355,8 @@ def deploy():
         try:
             logger.info(f"Starting deployment for {project_name}")
 
-            # Construire les variables d'environnement pour deploy.sh
-            # IMPORTANT: On utilise DEPLOY_COMPOSE_FILE au lieu de COMPOSE_FILE
-            # car docker compose utilise COMPOSE_FILE nativement
+            # IMPORTANT: DEPLOY_COMPOSE_FILE instead of COMPOSE_FILE
+            # because docker compose uses COMPOSE_FILE natively
             env = {
                 **os.environ,
                 'PROJECT_NAME': project_name,
@@ -201,7 +367,6 @@ def deploy():
                 'BRANCH': branch,
                 'SERVICES': ','.join(config.get('services', [])),
             }
-            # Supprimer COMPOSE_FILE de l'env pour ne pas interférer avec docker compose
             env.pop('COMPOSE_FILE', None)
 
             process = subprocess.Popen(

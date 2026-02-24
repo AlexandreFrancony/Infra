@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>francony.fr — Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='4' y='8' width='24' height='18' rx='2' fill='%23C65F3C'/><rect x='7' y='11' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='7' y='16' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='14' y='11' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='14' y='16' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='21' y='11' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='21' y='16' width='4' height='3' rx='1' fill='%23F5EFE0'/><rect x='12' y='4' width='8' height='4' rx='1' fill='%23B34924'/></svg>">
+<script>
+(function(){
+  var s = localStorage.getItem('theme');
+  if (s) document.documentElement.setAttribute('data-theme', s);
+  else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
+<style>
+:root {
+  --bg-primary: #F5EFE0; --bg-card: #EFE6D6; --bg-header: #E8DECA; --bg-input: #E8DECA;
+  --border: #D3C5AE; --text-primary: #3E2E22; --text-secondary: #5A4634; --text-muted: #8A7A6A;
+  --accent: #C65F3C; --accent-hover: #B34924; --positive: #16a34a; --negative: #dc2626; --warning: #d97706;
+  --bar-low: #4a90d9; --bar-mid: #d97706; --bar-high: #dc2626;
+  --skeleton: #E0D6C6; --skeleton-shine: #EDE5D8;
+}
+[data-theme="dark"] {
+  --bg-primary: #2A2018; --bg-card: #342A1E; --bg-header: #3E3228; --bg-input: #3E3228;
+  --border: #4A3E32; --text-primary: #EDE5D8; --text-secondary: #C4B8A8; --text-muted: #8A7A6A;
+  --accent: #C65F3C; --accent-hover: #D87D5C;
+  --skeleton: #3E3228; --skeleton-shine: #4A3E32;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary); color: var(--text-primary);
+  min-height: 100vh; min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; }
+
+/* Header */
+header {
+  background: var(--bg-header); border-bottom: 1px solid var(--border);
+  padding: 12px 16px; position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+header .inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+}
+header h1 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
+header h1 span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.refresh-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--positive);
+  opacity: 0; transition: opacity 0.3s;
+}
+.refresh-dot.active { opacity: 1; }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.icon-sun, [data-theme="dark"] .icon-moon { display: none; }
+[data-theme="dark"] .icon-sun { display: block; }
+[data-theme="dark"] .icon-moon { display: none; }
+/* Fix: show moon in light, sun in dark */
+.icon-moon { display: block; }
+[data-theme="dark"] .icon-sun { display: block; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+/* Apps Grid */
+.apps-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  margin-top: 20px;
+}
+@media (min-width: 640px) { .apps-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .apps-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
+.app-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 12px; text-decoration: none; color: var(--text-primary);
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.app-card:hover {
+  border-color: var(--accent); transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(198, 95, 60, 0.12);
+}
+.app-card:active { transform: translateY(0); }
+.app-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+.app-info { flex: 1; min-width: 0; }
+.app-name { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-tag { font-size: 0.625rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-muted); transition: background 0.3s;
+}
+.status-dot.online { background: var(--positive); }
+.status-dot.online { animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(22, 163, 74, 0); }
+}
+
+/* Sections */
+.section { margin-top: 16px; }
+.section-header {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.2s;
+}
+.section-header:hover { border-color: var(--accent); }
+.section-header.open { border-radius: 12px 12px 0 0; border-bottom-color: transparent; }
+.section-title { display: flex; align-items: baseline; gap: 8px; }
+.section-title h2 { font-size: 0.9375rem; font-weight: 700; }
+.section-title .sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+.section-arrow {
+  width: 20px; height: 20px; color: var(--text-muted);
+  transition: transform 0.3s; flex-shrink: 0;
+}
+.section-header.open .section-arrow { transform: rotate(180deg); }
+.section-body {
+  background: var(--bg-card); border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 12px 12px; padding: 0 16px;
+  max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s;
+}
+.section-body.open { max-height: 2000px; padding: 4px 16px 16px; }
+.section-badge {
+  font-size: 0.6875rem; padding: 2px 8px; border-radius: 6px;
+  background: var(--bg-primary); color: var(--text-muted); font-weight: 500;
+}
+.section-badge.ok { background: rgba(22,163,74,0.1); color: var(--positive); }
+.section-badge.err { background: rgba(220,38,38,0.1); color: var(--negative); }
+
+/* Stats */
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-top: 12px;
+}
+@media (min-width: 640px) { .stat-grid { grid-template-columns: 1fr 1fr 1fr; } }
+.stat-item { }
+.stat-label { font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.stat-value { font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-detail { font-size: 0.6875rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Progress bars */
+.bar-wrap { margin-top: 12px; }
+.bar-wrap + .bar-wrap { margin-top: 10px; }
+.bar-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.75rem; margin-bottom: 4px;
+}
+.bar-label span:first-child { color: var(--text-secondary); font-weight: 500; }
+.bar-label span:last-child { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.bar-track {
+  height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden;
+}
+.bar-fill {
+  height: 100%; border-radius: 4px; transition: width 0.8s ease, background 0.3s;
+  min-width: 0;
+}
+.bar-fill.low { background: var(--bar-low); }
+.bar-fill.mid { background: var(--bar-mid); }
+.bar-fill.high { background: var(--bar-high); }
+.bar-fill.accent { background: var(--accent); }
+
+/* Containers */
+.containers-list { margin-top: 14px; }
+.containers-title {
+  font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.04em; margin-bottom: 8px; font-weight: 500;
+}
+.container-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+.container-row:first-of-type { border-top: none; }
+.c-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-muted);
+}
+.c-dot.running { background: var(--positive); }
+.c-dot.exited { background: var(--negative); }
+.c-name { font-weight: 500; flex: 1; }
+.c-status { color: var(--text-muted); font-size: 0.75rem; }
+
+/* Pi-hole */
+.pihole-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  margin-top: 12px; text-align: center;
+}
+.pihole-stat .pihole-num {
+  font-size: 1.5rem; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.pihole-stat .pihole-label {
+  font-size: 0.6875rem; color: var(--text-muted); margin-top: 2px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+/* Offline banner */
+.offline-banner {
+  background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2);
+  border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+  font-size: 0.8125rem; color: var(--negative); text-align: center;
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-shine) 50%, var(--skeleton) 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skel-bar { height: 8px; margin-top: 6px; width: 100%; }
+.skel-text { height: 14px; width: 60%; margin: 6px 0; }
+.skel-value { height: 22px; width: 40%; margin: 4px 0; }
+
+/* Fade in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeUp 0.4s ease both; }
+.fade-in:nth-child(2) { animation-delay: 0.05s; }
+.fade-in:nth-child(3) { animation-delay: 0.1s; }
+.fade-in:nth-child(4) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1><span>francony</span>.fr</h1>
+    <div class="header-right">
+      <div class="refresh-dot" id="refreshDot"></div>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Apps -->
+  <div class="apps-grid" id="appsGrid"></div>
+
+  <!-- ProDesk -->
+  <div class="section fade-in">
+    <div class="section-header open" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>ProDesk</h2>
+        <span class="sub">HP ProDesk 400 G5</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="section-badge" id="prodeskBadge">…</span>
+        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="section-body open" id="prodeskBody">
+      <div id="prodeskStats">
+        <div class="stat-grid"><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div></div>
+        <div class="bar-wrap"><div class="skeleton skel-bar"></div></div>
+        <div class="bar-wrap"><div class="skeleton skel-bar"></div></div>
+      </div>
+      <div class="containers-list" id="prodeskContainers">
+        <div class="containers-title">Containers</div>
+        <div class="skeleton skel-text" style="width:80%"></div>
+        <div class="skeleton skel-text" style="width:70%;margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raspberry Pi 4 -->
+  <div class="section fade-in">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>Raspberry Pi 4</h2>
+        <span class="sub">OctoPrint + Calv-a-lot</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="section-badge" id="piBadge">…</span>
+        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="section-body" id="piBody">
+      <div id="piStats">
+        <div class="stat-grid"><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pi-hole -->
+  <div class="section fade-in">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>Pi-hole</h2>
+        <span class="sub">DNS Ad Blocker</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="section-badge" id="piholeBadge">…</span>
+        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="section-body" id="piholeBody">
+      <div id="piholeStats">
+        <div class="pihole-grid"><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Helpers ────────────────────────────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatBytes(b, d) {
+  if (!b || b === 0) return '0 B';
+  d = d || 1;
+  var u = ['B','KB','MB','GB','TB'];
+  var i = Math.floor(Math.log(b) / Math.log(1024));
+  return (b / Math.pow(1024, i)).toFixed(d) + ' ' + u[i];
+}
+
+function formatRate(b) {
+  if (b < 1024) return b + ' B/s';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB/s';
+  return (b / 1048576).toFixed(1) + ' MB/s';
+}
+
+function barClass(pct) {
+  if (pct >= 80) return 'high';
+  if (pct >= 60) return 'mid';
+  return 'low';
+}
+
+function tempColor(t) {
+  if (t == null) return 'var(--text-muted)';
+  if (t >= 80) return 'var(--negative)';
+  if (t >= 65) return 'var(--warning)';
+  if (t >= 50) return '#d97706';
+  return 'var(--positive)';
+}
+
+async function fetchJSON(url, opts) {
+  try {
+    var res = await fetch(url, opts || {});
+    if (!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+// ─── Theme ──────────────────────────────────────────
+function toggleTheme() {
+  var curr = document.documentElement.getAttribute('data-theme');
+  var next = curr === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+  if (!localStorage.getItem('theme')) {
+    document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+  }
+});
+
+// ─── Sections ───────────────────────────────────────
+function toggleSection(el) {
+  el.classList.toggle('open');
+  var body = el.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ─── Apps ───────────────────────────────────────────
+var APPS = [
+  { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails' },
+  { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading' },
+  { name: 'MTG Collection', icon: '🃏', url: 'https://mtg.francony.fr',       tag: 'cards' },
+  { name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade' },
+  { name: 'OctoPrint',      icon: '🖨️', url: 'https://octoprint.francony.fr', tag: '3d printer' },
+  { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords' },
+  { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns' },
+  { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy' },
+];
+
+function renderApps() {
+  var grid = document.getElementById('appsGrid');
+  grid.innerHTML = APPS.map(function(a, i) {
+    return '<a class="app-card fade-in" href="' + esc(a.url) + '" target="_blank" rel="noopener" style="animation-delay:' + (i * 0.03) + 's">' +
+      '<span class="app-icon">' + a.icon + '</span>' +
+      '<div class="app-info"><div class="app-name">' + esc(a.name) + '</div><div class="app-tag">' + esc(a.tag) + '</div></div>' +
+      '<div class="status-dot" id="app-' + i + '"></div>' +
+    '</a>';
+  }).join('');
+}
+
+async function checkApps() {
+  APPS.forEach(function(a, i) {
+    var dot = document.getElementById('app-' + i);
+    fetch(a.url, { mode: 'no-cors', cache: 'no-store' }).then(function() {
+      dot.classList.add('online');
+    }).catch(function() {
+      dot.classList.remove('online');
+    });
+  });
+}
+
+// ─── ProDesk ────────────────────────────────────────
+function renderBar(label, pct, detail, cls) {
+  pct = Math.min(100, Math.max(0, pct));
+  var c = cls || barClass(pct);
+  return '<div class="bar-wrap">' +
+    '<div class="bar-label"><span>' + esc(label) + '</span><span>' + pct.toFixed(1) + '%' + (detail ? ' — ' + esc(detail) : '') + '</span></div>' +
+    '<div class="bar-track"><div class="bar-fill ' + c + '" style="width:' + pct + '%"></div></div>' +
+  '</div>';
+}
+
+async function refreshProdesk() {
+  var [sys, dock] = await Promise.all([
+    fetchJSON('/api/system'),
+    fetchJSON('/api/docker')
+  ]);
+
+  var badge = document.getElementById('prodeskBadge');
+
+  if (!sys) {
+    badge.textContent = 'Erreur';
+    badge.className = 'section-badge err';
+    return;
+  }
+
+  badge.textContent = 'En ligne';
+  badge.className = 'section-badge ok';
+
+  var memPct = sys.memory.total ? (sys.memory.used / sys.memory.total * 100) : 0;
+  var diskPct = sys.disk.total ? (sys.disk.used / sys.disk.total * 100) : 0;
+
+  var html = '<div class="stat-grid">' +
+    '<div><div class="stat-label">Température</div><div class="stat-value" style="color:' + tempColor(sys.temperature) + '">' + (sys.temperature != null ? sys.temperature + '°C' : '—') + '</div></div>' +
+    '<div><div class="stat-label">Réseau</div><div class="stat-value" style="font-size:0.875rem">↓ ' + formatRate(sys.network.rx_rate) + '<br>↑ ' + formatRate(sys.network.tx_rate) + '</div></div>' +
+    '<div><div class="stat-label">Uptime</div><div class="stat-value">' + esc(sys.uptime) + '</div></div>' +
+  '</div>';
+  html += renderBar('CPU', sys.cpu.percent);
+  html += renderBar('RAM', memPct, formatBytes(sys.memory.used) + ' / ' + formatBytes(sys.memory.total));
+  html += renderBar('Disque', diskPct, formatBytes(sys.disk.used) + ' / ' + formatBytes(sys.disk.total));
+
+  document.getElementById('prodeskStats').innerHTML = html;
+
+  // Docker
+  if (dock && dock.containers) {
+    var chtml = '<div class="containers-title">Containers — ' + dock.running + '/' + dock.total + ' actifs</div>';
+    dock.containers.forEach(function(c) {
+      chtml += '<div class="container-row">' +
+        '<div class="c-dot ' + esc(c.state) + '"></div>' +
+        '<div class="c-name">' + esc(c.name) + '</div>' +
+        '<div class="c-status">' + esc(c.status) + '</div>' +
+      '</div>';
+    });
+    document.getElementById('prodeskContainers').innerHTML = chtml;
+  }
+}
+
+// ─── Raspberry Pi ───────────────────────────────────
+async function refreshPi() {
+  var badge = document.getElementById('piBadge');
+  var data = await fetchJSON('https://calv.francony.fr/api/host-stats', { credentials: 'include' });
+
+  if (!data) {
+    badge.textContent = 'Hors ligne';
+    badge.className = 'section-badge err';
+    document.getElementById('piStats').innerHTML = '<div class="offline-banner">Raspberry Pi 4 injoignable</div>';
+    return;
+  }
+
+  badge.textContent = 'En ligne';
+  badge.className = 'section-badge ok';
+
+  var memPct = data.memory && data.memory.total ? (data.memory.used / data.memory.total * 100) : 0;
+  var diskPct = data.disk && data.disk.total ? (data.disk.used / data.disk.total * 100) : 0;
+
+  var html = '<div class="stat-grid">' +
+    '<div><div class="stat-label">Température</div><div class="stat-value" style="color:' + tempColor(data.temperature) + '">' + (data.temperature != null ? data.temperature + '°C' : '—') + '</div></div>' +
+    '<div><div class="stat-label">Uptime</div><div class="stat-value">' + esc(data.uptime || '?') + '</div></div>' +
+  '</div>';
+  html += renderBar('CPU', data.cpu ? data.cpu.percent : 0);
+  html += renderBar('RAM', memPct, formatBytes(data.memory.used) + ' / ' + formatBytes(data.memory.total));
+  html += renderBar('Disque', diskPct, formatBytes(data.disk.used) + ' / ' + formatBytes(data.disk.total));
+
+  document.getElementById('piStats').innerHTML = html;
+}
+
+// ─── Pi-hole ────────────────────────────────────────
+async function refreshPihole() {
+  var badge = document.getElementById('piholeBadge');
+  var data = await fetchJSON('/api/pihole');
+
+  if (!data || data.status === 'error') {
+    badge.textContent = 'Erreur';
+    badge.className = 'section-badge err';
+    return;
+  }
+
+  badge.textContent = 'Actif';
+  badge.className = 'section-badge ok';
+
+  var pct = parseFloat(data.percent) || 0;
+  var html = '<div class="pihole-grid">' +
+    '<div class="pihole-stat"><div class="pihole-num">' + esc(String(data.queries)) + '</div><div class="pihole-label">Requêtes</div></div>' +
+    '<div class="pihole-stat"><div class="pihole-num">' + esc(String(data.blocked)) + '</div><div class="pihole-label">Bloquées</div></div>' +
+    '<div class="pihole-stat"><div class="pihole-num">' + pct.toFixed(1) + '%</div><div class="pihole-label">Filtrées</div></div>' +
+  '</div>';
+  html += renderBar('Taux de blocage', pct, null, 'accent');
+
+  document.getElementById('piholeStats').innerHTML = html;
+}
+
+// ─── Main ───────────────────────────────────────────
+async function refreshAll() {
+  var dot = document.getElementById('refreshDot');
+  dot.classList.add('active');
+  await Promise.all([refreshProdesk(), refreshPi(), refreshPihole(), checkApps()]);
+  setTimeout(function() { dot.classList.remove('active'); }, 1000);
+}
+
+renderApps();
+refreshAll();
+setInterval(refreshAll, 30000);
+</script>
+</body>
+</html>

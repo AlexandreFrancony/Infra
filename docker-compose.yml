@@ -89,23 +89,6 @@ services:
       - proxy-network
 
   # ============================================
-  # HOMARR - Admin Dashboard
-  # ============================================
-  homarr:
-    image: ghcr.io/homarr-labs/homarr:latest
-    container_name: homarr
-    restart: unless-stopped
-    environment:
-      SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_KEY:?Homarr encryption key required}
-    volumes:
-      - homarr_data:/appdata
-      - /var/run/docker.sock:/var/run/docker.sock
-    expose:
-      - "7575"
-    networks:
-      - proxy-network
-
-  # ============================================
   # PI-HOLE - DNS Ad Blocker
   # ============================================
   pihole:
@@ -132,7 +115,6 @@ services:
 volumes:
   postgres_data:
   webhook_logs:
-  homarr_data:
   pihole_data:
 
 networks:
