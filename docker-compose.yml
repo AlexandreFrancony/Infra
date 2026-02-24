@@ -74,6 +74,7 @@ services:
       start_period: 15s
     environment:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
+      PIHOLE_PASSWORD: ${PIHOLE_PASSWORD:?Pi-hole password required}
       HOSTING_DIR: /home/bloster/Hosting
       PORT: 9000
     volumes:

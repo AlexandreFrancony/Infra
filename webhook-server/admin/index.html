@@ -470,7 +470,7 @@ async function refreshProdesk() {
 // ─── Raspberry Pi ───────────────────────────────────
 async function refreshPi() {
   var badge = document.getElementById('piBadge');
-  var data = await fetchJSON('https://calv.francony.fr/api/host-stats', { credentials: 'include' });
+  var data = await fetchJSON('/api/pi4');
 
   if (!data) {
     badge.textContent = 'Hors ligne';

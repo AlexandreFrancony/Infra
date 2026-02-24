@@ -224,34 +224,51 @@ def api_docker():
         return jsonify({'containers': [], 'total': 0, 'running': 0, 'error': str(e)})
 
 
+@app.route('/api/pi4', methods=['GET'])
+def api_pi4():
+    """Raspberry Pi 4 stats via LAN"""
+    try:
+        req = urllib.request.Request('http://192.168.1.62:8080/api/host-stats', method='GET')
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return jsonify(json.loads(resp.read()))
+    except Exception as e:
+        logger.error(f"Pi 4 API error: {e}")
+        return jsonify({'error': str(e)}), 502
+
+
 @app.route('/api/pihole', methods=['GET'])
 def api_pihole():
-    """Pi-hole stats via internal Docker network"""
+    """Pi-hole stats via internal Docker network (v6 auth)"""
     try:
-        req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        # Authenticate to get session ID
+        pw = os.environ.get('PIHOLE_PASSWORD', '')
+        auth_data = json.dumps({'password': pw}).encode()
+        auth_req = urllib.request.Request(
+            'http://pihole/api/auth', data=auth_data, method='POST',
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(auth_req, timeout=5) as resp:
+            auth = json.loads(resp.read())
+
+        sid = auth.get('session', {}).get('sid')
+        if not sid:
+            raise ValueError('Pi-hole auth failed')
+
+        # Fetch stats with session
+        stats_req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
+        stats_req.add_header('sid', sid)
+        with urllib.request.urlopen(stats_req, timeout=5) as resp:
             data = json.loads(resp.read())
+
         return jsonify({
-            'queries': data.get('dns_queries_today', data.get('queries', {}).get('total', 0)),
-            'blocked': data.get('ads_blocked_today', data.get('queries', {}).get('blocked', 0)),
-            'percent': data.get('ads_percentage_today', data.get('queries', {}).get('percent_blocked', 0)),
-            'status': data.get('status', 'unknown')
+            'queries': data.get('queries', {}).get('total', 0),
+            'blocked': data.get('queries', {}).get('blocked', 0),
+            'percent': data.get('queries', {}).get('percent_blocked', 0),
+            'status': 'enabled'
         })
-    except Exception:
-        # Try Pi-hole v6 API format
-        try:
-            req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                raw = json.loads(resp.read())
-            return jsonify({
-                'queries': raw.get('queries', {}).get('total', 0),
-                'blocked': raw.get('queries', {}).get('blocked', 0),
-                'percent': raw.get('queries', {}).get('percent_blocked', 0),
-                'status': 'enabled'
-            })
-        except Exception as e:
-            logger.error(f"Pi-hole API error: {e}")
-            return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
+    except Exception as e:
+        logger.error(f"Pi-hole API error: {e}")
+        return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
 
 # ============================================
