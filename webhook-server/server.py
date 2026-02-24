@@ -224,6 +224,38 @@ def api_docker():
         return jsonify({'containers': [], 'total': 0, 'running': 0, 'error': str(e)})
 
 
+@app.route('/api/app-status', methods=['GET'])
+def api_app_status():
+    """Check reachability of all services (server-side, bypasses CORS)."""
+    urls = {
+        'tipsy': 'https://tipsy.francony.fr',
+        'crypto': 'https://crypto.francony.fr',
+        'mtg': 'https://mtg.francony.fr',
+        'calv': 'https://calv.francony.fr',
+        'octoprint': 'https://octoprint.francony.fr',
+        'vault': 'https://vault.francony.fr',
+        'pihole': 'https://pihole.francony.fr',
+        'pangolin': 'https://pangolin.francony.fr',
+    }
+    results = {}
+
+    def check(name, url):
+        try:
+            req = urllib.request.Request(url, method='GET')
+            with urllib.request.urlopen(req, timeout=5):
+                results[name] = True
+        except Exception:
+            results[name] = False
+
+    threads = [threading.Thread(target=check, args=(n, u)) for n, u in urls.items()]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=6)
+
+    return jsonify(results)
+
+
 @app.route('/api/pi4', methods=['GET'])
 def api_pi4():
     """Raspberry Pi 4 stats via LAN"""

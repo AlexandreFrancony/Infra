@@ -380,14 +380,14 @@ function toggleSection(el) {
 
 // ─── Apps ───────────────────────────────────────────
 var APPS = [
-  { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails' },
-  { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading' },
-  { name: 'MTG Collection', icon: '🃏', url: 'https://mtg.francony.fr',       tag: 'cards' },
-  { name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade' },
-  { name: 'OctoPrint',      icon: '🖨️', url: 'https://octoprint.francony.fr', tag: '3d printer' },
-  { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords' },
-  { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns' },
-  { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy' },
+  { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
+  { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading',      key: 'crypto' },
+  { name: 'MTG Collection', icon: '🃏', url: 'https://mtg.francony.fr',       tag: 'cards',        key: 'mtg' },
+  { name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade',   key: 'calv' },
+  { name: 'OctoPrint',      icon: '🖨️', url: 'https://octoprint.francony.fr', tag: '3d printer',   key: 'octoprint' },
+  { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
+  { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
+  { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy',        key: 'pangolin' },
 ];
 
 function renderApps() {
@@ -402,13 +402,12 @@ function renderApps() {
 }
 
 async function checkApps() {
+  var status = await fetchJSON('/api/app-status');
+  if (!status) return;
   APPS.forEach(function(a, i) {
     var dot = document.getElementById('app-' + i);
-    fetch(a.url, { mode: 'no-cors', cache: 'no-store' }).then(function() {
-      dot.classList.add('online');
-    }).catch(function() {
-      dot.classList.remove('online');
-    });
+    if (status[a.key]) dot.classList.add('online');
+    else dot.classList.remove('online');
   });
 }
 
