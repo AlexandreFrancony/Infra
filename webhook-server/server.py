@@ -236,25 +236,40 @@ def api_pi4():
         return jsonify({'error': str(e)}), 502
 
 
+# Pi-hole session cache (avoid re-auth every request → 429 rate limit)
+_pihole_sid = {'sid': None, 'expires': 0}
+
+
+def _pihole_get_sid():
+    """Get or refresh Pi-hole session token."""
+    global _pihole_sid
+    if _pihole_sid['sid'] and time.time() < _pihole_sid['expires']:
+        return _pihole_sid['sid']
+
+    pw = os.environ.get('PIHOLE_PASSWORD', '')
+    auth_data = json.dumps({'password': pw}).encode()
+    auth_req = urllib.request.Request(
+        'http://pihole/api/auth', data=auth_data, method='POST',
+        headers={'Content-Type': 'application/json'}
+    )
+    with urllib.request.urlopen(auth_req, timeout=5) as resp:
+        auth = json.loads(resp.read())
+
+    sid = auth.get('session', {}).get('sid')
+    validity = auth.get('session', {}).get('validity', 300)
+    if not sid:
+        raise ValueError('Pi-hole auth failed')
+
+    _pihole_sid = {'sid': sid, 'expires': time.time() + validity - 30}
+    return sid
+
+
 @app.route('/api/pihole', methods=['GET'])
 def api_pihole():
     """Pi-hole stats via internal Docker network (v6 auth)"""
     try:
-        # Authenticate to get session ID
-        pw = os.environ.get('PIHOLE_PASSWORD', '')
-        auth_data = json.dumps({'password': pw}).encode()
-        auth_req = urllib.request.Request(
-            'http://pihole/api/auth', data=auth_data, method='POST',
-            headers={'Content-Type': 'application/json'}
-        )
-        with urllib.request.urlopen(auth_req, timeout=5) as resp:
-            auth = json.loads(resp.read())
+        sid = _pihole_get_sid()
 
-        sid = auth.get('session', {}).get('sid')
-        if not sid:
-            raise ValueError('Pi-hole auth failed')
-
-        # Fetch stats with session
         stats_req = urllib.request.Request('http://pihole/api/stats/summary', method='GET')
         stats_req.add_header('sid', sid)
         with urllib.request.urlopen(stats_req, timeout=5) as resp:
@@ -267,6 +282,7 @@ def api_pihole():
             'status': 'enabled'
         })
     except Exception as e:
+        _pihole_sid['sid'] = None  # Force re-auth on next call
         logger.error(f"Pi-hole API error: {e}")
         return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
