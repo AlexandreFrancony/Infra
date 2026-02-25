@@ -91,6 +91,15 @@ header h1 span { color: var(--accent); }
 .app-info { flex: 1; min-width: 0; }
 .app-name { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app-tag { font-size: 0.625rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+.app-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.app-latency {
+  font-size: 0.5625rem; color: var(--text-muted); font-variant-numeric: tabular-nums;
+  font-weight: 500; opacity: 0; transition: opacity 0.3s;
+}
+.app-latency.visible { opacity: 1; }
+.app-latency.fast { color: var(--positive); }
+.app-latency.medium { color: var(--warning); }
+.app-latency.slow { color: var(--negative); }
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
   background: var(--text-muted); transition: background 0.3s;
@@ -481,9 +490,15 @@ function renderApps() {
     return '<a class="app-card fade-in" href="' + esc(a.url) + '" target="_blank" rel="noopener" style="animation-delay:' + (i * 0.03) + 's">' +
       '<span class="app-icon">' + a.icon + '</span>' +
       '<div class="app-info"><div class="app-name">' + esc(a.name) + '</div><div class="app-tag">' + esc(a.tag) + '</div></div>' +
-      '<div class="status-dot" id="app-' + i + '"></div>' +
+      '<div class="app-right"><span class="app-latency" id="lat-' + i + '"></span><div class="status-dot" id="app-' + i + '"></div></div>' +
     '</a>';
   }).join('');
+}
+
+function latencyClass(ms) {
+  if (ms < 500) return 'fast';
+  if (ms < 1500) return 'medium';
+  return 'slow';
 }
 
 async function checkApps() {
@@ -491,8 +506,18 @@ async function checkApps() {
   if (!status) return;
   APPS.forEach(function(a, i) {
     var dot = document.getElementById('app-' + i);
-    if (status[a.key]) dot.classList.add('online');
-    else dot.classList.remove('online');
+    var lat = document.getElementById('lat-' + i);
+    var info = status[a.key];
+    if (!info) return;
+    if (info.up) {
+      dot.classList.add('online');
+      lat.textContent = info.ms + 'ms';
+      lat.className = 'app-latency visible ' + latencyClass(info.ms);
+    } else {
+      dot.classList.remove('online');
+      lat.textContent = '';
+      lat.className = 'app-latency';
+    }
   });
 }
 

@@ -227,7 +227,7 @@ def api_docker():
 
 @app.route('/api/app-status', methods=['GET'])
 def api_app_status():
-    """Check reachability of all services (server-side, bypasses CORS)."""
+    """Check reachability + response time of all services (server-side, bypasses CORS)."""
     urls = {
         'tipsy': 'https://tipsy.francony.fr',
         'crypto': 'https://crypto.francony.fr',
@@ -241,12 +241,15 @@ def api_app_status():
     results = {}
 
     def check(name, url):
+        t0 = time.time()
         try:
             req = urllib.request.Request(url, method='GET')
             with urllib.request.urlopen(req, timeout=5):
-                results[name] = True
+                ms = round((time.time() - t0) * 1000)
+                results[name] = {'up': True, 'ms': ms}
         except Exception:
-            results[name] = False
+            ms = round((time.time() - t0) * 1000)
+            results[name] = {'up': False, 'ms': ms}
 
     threads = [threading.Thread(target=check, args=(n, u)) for n, u in urls.items()]
     for t in threads:
