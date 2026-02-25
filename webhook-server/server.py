@@ -28,6 +28,7 @@ HOSTING_DIR = os.environ.get('HOSTING_DIR', '/home/bloster/Hosting')
 DEPLOY_SCRIPT = os.path.join(os.path.dirname(__file__), 'deploy.sh')
 CONFIG_DIR = os.path.join(os.path.dirname(__file__), 'projects')
 LOG_FILE = '/var/log/infra/webhook.log'
+DEPLOY_LOG = '/var/log/infra/deployments.jsonl'
 
 # Ensure log directory exists
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -319,6 +320,124 @@ def api_pihole():
         return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
 
+@app.route('/api/cashalot', methods=['GET'])
+def api_cashalot():
+    """Cash-a-lot summary via internal Docker network."""
+    base = 'http://cashalot:8080'
+    results = {}
+
+    def fetch(key, path):
+        try:
+            req = urllib.request.Request(f'{base}{path}', method='GET')
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                results[key] = json.loads(resp.read())
+        except Exception:
+            results[key] = None
+
+    threads = [
+        threading.Thread(target=fetch, args=('budget', '/api/budget')),
+        threading.Thread(target=fetch, args=('agent', '/api/agent/status')),
+        threading.Thread(target=fetch, args=('trades', '/api/trades?limit=3')),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=6)
+
+    b = results.get('budget')
+    a = results.get('agent')
+    tr = results.get('trades')
+
+    if not b:
+        return jsonify({'error': 'Cash-a-lot unreachable'}), 502
+
+    total_eur = b.get('total_value_eur', 0)
+    deposited = b.get('total_deposited_eur', 0)
+    pnl_eur = total_eur - deposited if deposited else 0
+    pnl_pct = (pnl_eur / deposited * 100) if deposited else 0
+
+    last_trades = []
+    if tr:
+        for t in (tr if isinstance(tr, list) else []):
+            last_trades.append({
+                'coin': t.get('coin', '').replace('USDC', ''),
+                'action': t.get('action', ''),
+                'amount': t.get('amount_usdt', 0),
+                'time': t.get('created_at', ''),
+            })
+
+    return jsonify({
+        'portfolio_eur': round(total_eur, 2),
+        'portfolio_usdt': round(b.get('total_value_usdt', 0), 2),
+        'cash_usdt': round(b.get('cash_usdt', 0), 2),
+        'pnl_eur': round(pnl_eur, 2),
+        'pnl_pct': round(pnl_pct, 1),
+        'ai_budget': round(b.get('ai_budget_remaining', 0), 2),
+        'status': b.get('status', 'UNKNOWN'),
+        'bot_running': a.get('running', False) if a else False,
+        'bot_paused': a.get('paused', False) if a else False,
+        'trading_mode': a.get('trading_mode', '?') if a else '?',
+        'last_cycle': a.get('last_cycle', {}).get('status', '?') if a else '?',
+        'last_cycle_time': a.get('last_cycle', {}).get('timestamp', '') if a else '',
+        'last_trades': last_trades,
+    })
+
+
+@app.route('/api/deployments', methods=['GET'])
+def api_deployments():
+    """Recent deployment history from JSONL log."""
+    limit = min(int(request.args.get('limit', 10)), 50)
+    deployments = []
+
+    if os.path.exists(DEPLOY_LOG):
+        try:
+            with open(DEPLOY_LOG, 'r') as f:
+                lines = f.readlines()
+            for line in reversed(lines[-limit:]):
+                line = line.strip()
+                if line:
+                    deployments.append(json.loads(line))
+        except Exception as e:
+            logger.error(f"Deployments log read error: {e}")
+
+    # Check if deployment in progress
+    deploying = None
+    lock_file = '/tmp/infra_deploy.lock'
+    if os.path.isdir(lock_file):
+        try:
+            with open(os.path.join(lock_file, 'project'), 'r') as f:
+                project = f.read().strip()
+            with open(os.path.join(lock_file, 'started'), 'r') as f:
+                started = f.read().strip()
+            with open(os.path.join(lock_file, 'pid'), 'r') as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 0)
+            deploying = {'project': project, 'started': started}
+        except (FileNotFoundError, OSError, ValueError):
+            pass
+
+    return jsonify({'deployments': deployments, 'deploying': deploying})
+
+
+def _log_deployment(project, repo, branch, pusher, status, duration, exit_code):
+    """Append deployment result to JSONL log."""
+    entry = json.dumps({
+        'timestamp': datetime.now().isoformat(),
+        'project': project,
+        'repo': repo,
+        'branch': branch,
+        'pusher': pusher,
+        'status': status,
+        'duration': round(duration, 1),
+        'exit_code': exit_code,
+    })
+    try:
+        with open(DEPLOY_LOG, 'a') as f:
+            f.write(entry + '\n')
+    except Exception as e:
+        logger.error(f"Failed to write deploy log: {e}")
+
+
 # ============================================
 # WEBHOOK ENDPOINTS
 # ============================================
@@ -449,17 +568,23 @@ def deploy():
                 logger.info(f"Deployment completed for {project_name} in {duration:.1f}s")
                 if stdout:
                     logger.debug(f"[{project_name}] stdout: {stdout.decode()[-500:]}")
+                _log_deployment(project_name, repo_name, branch, pusher, 'success', duration, 0)
             else:
                 out_msg = stdout.decode()[-500:] if stdout else ""
                 err_msg = stderr.decode()[-1000:] if stderr else ""
                 logger.error(f"Deployment failed for {project_name} (exit {process.returncode}):\n"
                              f"STDOUT: {out_msg}\nSTDERR: {err_msg}")
+                _log_deployment(project_name, repo_name, branch, pusher, 'failed', duration, process.returncode)
 
         except subprocess.TimeoutExpired:
             process.kill()
+            duration = time.time() - start_time
             logger.error(f"Deployment timed out for {project_name}")
+            _log_deployment(project_name, repo_name, branch, pusher, 'timeout', duration, -1)
         except Exception as e:
+            duration = time.time() - start_time
             logger.error(f"Deployment error for {project_name}: {str(e)}")
+            _log_deployment(project_name, repo_name, branch, pusher, 'error', duration, -1)
 
     thread = threading.Thread(target=run_deployment, daemon=True)
     thread.start()

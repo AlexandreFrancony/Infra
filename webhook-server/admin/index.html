@@ -200,6 +200,51 @@ header h1 span { color: var(--accent); }
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 
+/* Cash-a-lot widget */
+.cashalot-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  margin-top: 12px; text-align: center;
+}
+.cashalot-stat-num { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cashalot-stat-label {
+  font-size: 0.6875rem; color: var(--text-muted); margin-top: 2px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.cashalot-trades { margin-top: 14px; }
+.cashalot-trade {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+.cashalot-trade:first-of-type { border-top: none; }
+.trade-action {
+  font-size: 0.625rem; font-weight: 700; padding: 2px 6px;
+  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.trade-action.buy { background: rgba(22,163,74,0.1); color: var(--positive); }
+.trade-action.sell { background: rgba(220,38,38,0.1); color: var(--negative); }
+.trade-coin { font-weight: 600; }
+.trade-amount { color: var(--text-muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.trade-time { color: var(--text-muted); font-size: 0.6875rem; width: 60px; text-align: right; }
+.cashalot-cycle {
+  margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Deployments */
+.deploy-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+.deploy-row:first-of-type { border-top: none; }
+.deploy-icon { flex-shrink: 0; font-size: 0.875rem; }
+.deploy-project { font-weight: 600; flex: 1; min-width: 0; }
+.deploy-branch { font-size: 0.6875rem; color: var(--text-muted); }
+.deploy-meta { font-size: 0.6875rem; color: var(--text-muted); text-align: right; white-space: nowrap; }
+.deploy-spinner { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 /* Offline banner */
 .offline-banner {
   background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2);
@@ -248,6 +293,25 @@ header h1 span { color: var(--accent); }
 
   <!-- Apps -->
   <div class="apps-grid" id="appsGrid"></div>
+
+  <!-- Cash-a-lot -->
+  <div class="section fade-in">
+    <div class="section-header open" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>Cash-a-lot</h2>
+        <span class="sub" id="cashalotMode">Trading Bot</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="section-badge" id="cashalotBadge">...</span>
+        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="section-body open" id="cashalotBody">
+      <div id="cashalotStats">
+        <div class="cashalot-stats"><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ProDesk -->
   <div class="section fade-in">
@@ -309,6 +373,27 @@ header h1 span { color: var(--accent); }
     <div class="section-body" id="piholeBody">
       <div id="piholeStats">
         <div class="pihole-grid"><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deployments -->
+  <div class="section fade-in">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>Deployments</h2>
+        <span class="sub">Auto-deploy</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="section-badge" id="deployBadge">...</span>
+        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="section-body" id="deployBody">
+      <div id="deployList">
+        <div class="skeleton skel-text" style="width:80%;margin-top:12px"></div>
+        <div class="skeleton skel-text" style="width:70%;margin-top:8px"></div>
+        <div class="skeleton skel-text" style="width:60%;margin-top:8px"></div>
       </div>
     </div>
   </div>
@@ -409,6 +494,70 @@ async function checkApps() {
     if (status[a.key]) dot.classList.add('online');
     else dot.classList.remove('online');
   });
+}
+
+// ─── Time ago helper ────────────────────────────────
+function timeAgo(iso) {
+  if (!iso) return '';
+  var secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return 'maintenant';
+  if (secs < 3600) return Math.floor(secs / 60) + 'min';
+  if (secs < 86400) return Math.floor(secs / 3600) + 'h';
+  return Math.floor(secs / 86400) + 'j';
+}
+
+// ─── Cash-a-lot ────────────────────────────────────
+async function refreshCashalot() {
+  var badge = document.getElementById('cashalotBadge');
+  var mode = document.getElementById('cashalotMode');
+  var data = await fetchJSON('/api/cashalot');
+
+  if (!data || data.error) {
+    badge.textContent = 'Hors ligne';
+    badge.className = 'section-badge err';
+    document.getElementById('cashalotStats').innerHTML = '<div class="offline-banner">Cash-a-lot injoignable</div>';
+    return;
+  }
+
+  // Badge
+  if (data.status === 'DEAD') { badge.textContent = 'Dead'; badge.className = 'section-badge err'; }
+  else if (data.bot_paused) { badge.textContent = 'En pause'; badge.className = 'section-badge'; }
+  else { badge.textContent = 'Actif'; badge.className = 'section-badge ok'; }
+
+  // Mode subtitle
+  mode.textContent = data.trading_mode === 'live' ? 'Live Trading' : 'Dry Run';
+
+  // Stats
+  var pnlColor = data.pnl_pct >= 0 ? 'var(--positive)' : 'var(--negative)';
+  var pnlSign = data.pnl_pct >= 0 ? '+' : '';
+  var html = '<div class="cashalot-stats">' +
+    '<div><div class="cashalot-stat-num">' + data.portfolio_eur.toFixed(2) + ' &euro;</div><div class="cashalot-stat-label">Portfolio</div></div>' +
+    '<div><div class="cashalot-stat-num" style="color:' + pnlColor + '">' + pnlSign + data.pnl_pct.toFixed(1) + '%</div><div class="cashalot-stat-label">P&amp;L</div></div>' +
+    '<div><div class="cashalot-stat-num">$' + data.ai_budget.toFixed(2) + '</div><div class="cashalot-stat-label">Budget IA</div></div>' +
+  '</div>';
+
+  // Trades
+  if (data.last_trades && data.last_trades.length > 0) {
+    html += '<div class="cashalot-trades">';
+    data.last_trades.forEach(function(t) {
+      var cls = t.action === 'BUY' ? 'buy' : 'sell';
+      html += '<div class="cashalot-trade">' +
+        '<span class="trade-action ' + cls + '">' + esc(t.action) + '</span>' +
+        '<span class="trade-coin">' + esc(t.coin) + '</span>' +
+        '<span class="trade-amount">' + parseFloat(t.amount).toFixed(2) + ' USDC</span>' +
+        '<span class="trade-time">' + timeAgo(t.time) + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Last cycle
+  html += '<div class="cashalot-cycle">' +
+    '<span>Dernier cycle : ' + esc(data.last_cycle) + '</span>' +
+    (data.last_cycle_time ? '<span>(' + timeAgo(data.last_cycle_time) + ')</span>' : '') +
+  '</div>';
+
+  document.getElementById('cashalotStats').innerHTML = html;
 }
 
 // ─── ProDesk ────────────────────────────────────────
@@ -520,11 +669,55 @@ async function refreshPihole() {
   document.getElementById('piholeStats').innerHTML = html;
 }
 
+// ─── Deployments ──────────────────────────────────
+async function refreshDeploys() {
+  var badge = document.getElementById('deployBadge');
+  var data = await fetchJSON('/api/deployments');
+
+  if (!data) {
+    badge.textContent = 'Erreur';
+    badge.className = 'section-badge err';
+    return;
+  }
+
+  var html = '';
+
+  // Deploying now?
+  if (data.deploying) {
+    html += '<div class="deploy-row">' +
+      '<span class="deploy-icon deploy-spinner">&#9881;</span>' +
+      '<span class="deploy-project">' + esc(data.deploying.project) + '</span>' +
+      '<span class="deploy-meta">en cours...</span>' +
+    '</div>';
+  }
+
+  if (data.deployments && data.deployments.length > 0) {
+    badge.textContent = data.deployments.length + ' derniers';
+    badge.className = 'section-badge';
+    data.deployments.forEach(function(d) {
+      var icon = d.status === 'success' ? '&#10003;' : '&#10007;';
+      var iconColor = d.status === 'success' ? 'var(--positive)' : 'var(--negative)';
+      html += '<div class="deploy-row">' +
+        '<span class="deploy-icon" style="color:' + iconColor + '">' + icon + '</span>' +
+        '<span class="deploy-project">' + esc(d.project) + '</span>' +
+        '<span class="deploy-branch">' + esc(d.branch) + '</span>' +
+        '<span class="deploy-meta">' + (d.duration ? d.duration + 's' : '') + ' &middot; ' + timeAgo(d.timestamp) + '</span>' +
+      '</div>';
+    });
+  } else if (!data.deploying) {
+    badge.textContent = 'Aucun';
+    badge.className = 'section-badge';
+    html = '<div style="text-align:center;color:var(--text-muted);font-size:0.8125rem;padding:16px 0">Aucun deploy enregistre</div>';
+  }
+
+  document.getElementById('deployList').innerHTML = html;
+}
+
 // ─── Main ───────────────────────────────────────────
 async function refreshAll() {
   var dot = document.getElementById('refreshDot');
   dot.classList.add('active');
-  await Promise.all([refreshProdesk(), refreshPi(), refreshPihole(), checkApps()]);
+  await Promise.all([refreshCashalot(), refreshProdesk(), refreshPi(), refreshPihole(), refreshDeploys(), checkApps()]);
   setTimeout(function() { dot.classList.remove('active'); }, 1000);
 }
 
