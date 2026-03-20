@@ -147,6 +147,13 @@ def api_system():
         data['disk'] = {'total': 0, 'used': 0}
 
     try:
+        result2 = subprocess.run(['df', '-B1', '/mnt/hdd'], capture_output=True, text=True, timeout=5)
+        parts2 = result2.stdout.strip().split(chr(10))[-1].split()
+        data['hdd'] = {'total': int(parts2[1]), 'used': int(parts2[2])}
+    except Exception:
+        data['hdd'] = {'total': 0, 'used': 0}
+
+    try:
         with open('/sys/class/thermal/thermal_zone0/temp') as f:
             data['temperature'] = round(int(f.read().strip()) / 1000, 1)
     except Exception:

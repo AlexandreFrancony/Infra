@@ -622,7 +622,8 @@ async function refreshProdesk() {
   '</div>';
   html += renderBar('CPU', sys.cpu.percent);
   html += renderBar('RAM', memPct, formatBytes(sys.memory.used) + ' / ' + formatBytes(sys.memory.total));
-  html += renderBar('Disque', diskPct, formatBytes(sys.disk.used) + ' / ' + formatBytes(sys.disk.total));
+  html += renderBar('SSD', diskPct, formatBytes(sys.disk.used) + ' / ' + formatBytes(sys.disk.total));
+  if (sys.hdd && sys.hdd.total > 0) { var hddPct = sys.hdd.used / sys.hdd.total * 100; html += renderBar('HDD', hddPct, formatBytes(sys.hdd.used) + ' / ' + formatBytes(sys.hdd.total)); }
 
   document.getElementById('prodeskStats').innerHTML = html;
 

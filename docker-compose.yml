@@ -86,6 +86,7 @@ services:
       - /home/bloster/.gitconfig:/root/.gitconfig:ro
       - /home/bloster/.ssh:/root/.ssh:ro
       - webhook_logs:/var/log/infra
+      - /mnt/hdd:/mnt/hdd:ro
     networks:
       - proxy-network
       - cashalot_network
