@@ -1,8 +1,0 @@
-# MTG Collection - Deployment Configuration
-name: MTG-Collection
-path: MTG-Collection
-branch:
-  - master
-  - main
-repos:
-  - MTG-Collection

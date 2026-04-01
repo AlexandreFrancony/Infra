@@ -387,8 +387,8 @@ def api_cashalot():
         'bot_running': a.get('running', False) if a else False,
         'bot_paused': a.get('paused', False) if a else False,
         'trading_mode': a.get('trading_mode', '?') if a else '?',
-        'last_cycle': a.get('last_cycle', {}).get('status', '?') if a else '?',
-        'last_cycle_time': a.get('last_cycle', {}).get('timestamp', '') if a else '',
+        'last_cycle': (a.get('last_cycle') or {}).get('status', '?') if a else '?',
+        'last_cycle_time': (a.get('last_cycle') or {}).get('timestamp', '') if a else '',
         'last_trades': last_trades,
     })
 

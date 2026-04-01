@@ -5,7 +5,6 @@
 #   ~/Hosting/
 #   ├── Infra/           <- this repo
 #   ├── Bartending/      <- Tipsy app
-#   ├── MTG-Collection/  <- MTG app
 #   └── Cash-a-lot/      <- Crypto trading bot
 #
 # Reverse proxy: Pangolin/Traefik on VPS (via Newt tunnel)
@@ -16,7 +15,7 @@
 
 services:
   # ============================================
-  # POSTGRESQL - Central Database (bartending + mtg_collection + cashalot)
+  # POSTGRESQL - Central Database (bartending + cashalot)
   # ============================================
   postgres:
     build:
@@ -30,13 +29,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bartender}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
       POSTGRES_DB: ${POSTGRES_DB:-bartending}
-      MTG_DB_PASSWORD: ${MTG_DB_PASSWORD:?MTG database password required}
       CASHALOT_DB_PASSWORD: ${CASHALOT_DB_PASSWORD:?Cash-a-lot database password required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # MTG database init script (runs after Bartending init scripts from Dockerfile)
-      - ./database/00-create-mtg-database.sh:/docker-entrypoint-initdb.d/00-create-mtg-database.sh:ro
-      # Cash-a-lot database init script
       - ./database/01-create-cashalot-database.sh:/docker-entrypoint-initdb.d/01-create-cashalot-database.sh:ro
     expose:
       - "5432"
@@ -54,11 +49,10 @@ services:
     networks:
       - proxy-network
       - bartending_network
-      - mtg_network
       - cashalot_network
 
   # ============================================
-  # WEBHOOK SERVER - Auto-deployment
+  # WEBHOOK SERVER - Auto-deployment (hot-reload via watchfiles)
   # ============================================
   webhook:
     build:
@@ -66,6 +60,7 @@ services:
       dockerfile: Dockerfile
     container_name: webhook-server
     restart: unless-stopped
+    command: ["watchfiles", "python server.py", "./"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/health || exit 1"]
       interval: 120s
@@ -79,9 +74,9 @@ services:
       PORT: 9000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Mount at same path so docker compose build contexts work correctly
       - /home/bloster/Hosting:/home/bloster/Hosting
-      # Git credentials pour que le webhook puisse pull les repos privés
+      # Source code mounted for hot-reload (overrides COPY in Dockerfile)
+      - ./webhook-server:/app
       - /home/bloster/.git-credentials:/root/.git-credentials:ro
       - /home/bloster/.gitconfig:/root/.gitconfig:ro
       - /home/bloster/.ssh:/root/.ssh:ro
@@ -90,6 +85,7 @@ services:
     networks:
       - proxy-network
       - cashalot_network
+      - media_network
 
   # ============================================
   # PI-HOLE - DNS Ad Blocker
@@ -97,6 +93,9 @@ services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
+    oom_score_adj: -500
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     restart: unless-stopped
     ports:
       - "53:53/tcp"
@@ -124,10 +123,9 @@ networks:
   proxy-network:
     name: proxy-network
     driver: bridge
-  # External networks from other apps
   bartending_network:
     external: true
-  mtg_network:
-    external: true
   cashalot_network:
+    external: true
+  media_network:
     external: true

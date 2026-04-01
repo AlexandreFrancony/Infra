@@ -1,3 +1,4 @@
 flask>=2.0
 waitress>=2.0
 pyyaml>=6.0
+watchfiles>=0.20
