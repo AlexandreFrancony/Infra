@@ -303,6 +303,20 @@ header h1 span { color: var(--accent); }
   <!-- Apps -->
   <div class="apps-grid" id="appsGrid"></div>
 
+  <!-- Media Stack -->
+  <div class="section fade-in">
+    <div class="section-header open" onclick="toggleSection(this)">
+      <div class="section-title">
+        <h2>Media Stack</h2>
+        <span class="sub">Jellyfin · Arr · RD</span>
+      </div>
+      <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="section-body open" id="mediaBody">
+      <div class="apps-grid" id="mediaGrid" style="margin-top:12px"></div>
+    </div>
+  </div>
+
   <!-- Cash-a-lot -->
   <div class="section fade-in">
     <div class="section-header open" onclick="toggleSection(this)">
@@ -473,11 +487,32 @@ function toggleSection(el) {
 }
 
 // ─── Apps ───────────────────────────────────────────
+var TS = 'http://100.71.179.2'; // Tailscale
+
+var MEDIA_APPS = [
+  { name: 'Jellyfin',    icon: '🎬', url: 'https://jellyfin.francony.fr',  tag: 'media server' },
+  { name: 'Jellyseerr', icon: '🔍', url: TS + ':32782',                    tag: 'requests' },
+  { name: 'Radarr',     icon: '🎥', url: TS + ':32785',                    tag: 'films' },
+  { name: 'Sonarr',     icon: '📺', url: TS + ':32783',                    tag: 'séries' },
+  { name: 'Prowlarr',   icon: '🔎', url: TS + ':32784',                    tag: 'indexers' },
+  { name: 'rdtclient',  icon: '⬇️', url: TS + ':6500',                     tag: 'real-debrid' },
+  { name: 'Metube',     icon: '▶️', url: TS + ':32780',                    tag: 'youtube dl' },
+];
+
+function renderMediaApps() {
+  var grid = document.getElementById('mediaGrid');
+  grid.innerHTML = MEDIA_APPS.map(function(a, i) {
+    return '<a class="app-card" href="' + esc(a.url) + '" target="_blank" rel="noopener">' +
+      '<span class="app-icon">' + a.icon + '</span>' +
+      '<div class="app-info"><div class="app-name">' + esc(a.name) + '</div><div class="app-tag">' + esc(a.tag) + '</div></div>' +
+    '</a>';
+  }).join('');
+}
+
 var APPS = [
   { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
   { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading',      key: 'crypto' },
-  { name: 'MTG Collection', icon: '🃏', url: 'https://mtg.francony.fr',       tag: 'cards',        key: 'mtg' },
-  { name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade',   key: 'calv' },
+{ name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade',   key: 'calv' },
   { name: 'OctoPrint',      icon: '🖨️', url: 'https://octoprint.francony.fr', tag: '3d printer',   key: 'octoprint' },
   { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
   { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
@@ -748,6 +783,7 @@ async function refreshAll() {
 }
 
 renderApps();
+renderMediaApps();
 refreshAll();
 setInterval(refreshAll, 30000);
 </script>
