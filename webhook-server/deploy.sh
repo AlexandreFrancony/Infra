@@ -104,6 +104,12 @@ pull_repo() {
 
     (
         cd "$repo_path"
+        # This container runs as root but /root/.ssh is a bind mount of the host's
+        # bloster-owned ~/.ssh - OpenSSH refuses to load a user config file it
+        # doesn't own ("Bad owner or permissions on /root/.ssh/config"), which
+        # aborts every SSH-based git operation. Skip that config file entirely
+        # and point straight at the identity/known_hosts instead.
+        export GIT_SSH_COMMAND="ssh -F /dev/null -i /root/.ssh/id_ed25519 -o UserKnownHostsFile=/root/.ssh/known_hosts"
         git fetch origin
         git reset --hard "origin/$branch"
         # Note: Don't use 'git clean -fd' as it removes untracked files like credentials
