@@ -7,13 +7,18 @@
 #   3. docker compose up -d
 #
 # Newt must be on ALL app networks to resolve container names
-# (same networks as the old nginx-proxy)
 
 services:
   newt:
     image: fosrl/newt
     container_name: newt
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "--timeout=10", "--tries=1", "https://webhook.francony.fr/health"]
+      interval: 1m
+      timeout: 15s
+      retries: 3
+      start_period: 30s
     environment:
       - PANGOLIN_ENDPOINT=${PANGOLIN_ENDPOINT:?Set PANGOLIN_ENDPOINT in .env}
       - NEWT_ID=${NEWT_ID:?Set NEWT_ID in .env}
@@ -21,18 +26,39 @@ services:
     networks:
       - proxy-network
       - bartending_network
-      - mtg_network
       - cashalot_network
       - calv-a-lot_default
+      - immich_network
+      - jellyfin_network
+      - media_network
+      - nextcloud_network
+      - plex_network
+      - vaultwarden_network
+      - homeassistant_network
+      - triathlon_network
 
 networks:
   proxy-network:
     external: true
   bartending_network:
     external: true
-  mtg_network:
-    external: true
   cashalot_network:
     external: true
   calv-a-lot_default:
+    external: true
+  immich_network:
+    external: true
+  jellyfin_network:
+    external: true
+  media_network:
+    external: true
+  nextcloud_network:
+    external: true
+  plex_network:
+    external: true
+  vaultwarden_network:
+    external: true
+  homeassistant_network:
+    external: true
+  triathlon_network:
     external: true

@@ -1,0 +1,13 @@
+services:
+  ssh-tunnel:
+    image: alpine:latest
+    container_name: ssh-tunnel
+    restart: always
+    network_mode: host
+    volumes:
+      - /home/bloster/.ssh/id_tunnel:/root/.ssh/id_tunnel:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        apk add --no-cache openssh-client > /dev/null 2>&1 &&
+        ssh -N           -o ServerAliveInterval=30           -o ServerAliveCountMax=3           -o StrictHostKeyChecking=no           -o ExitOnForwardFailure=yes           -i /root/.ssh/id_tunnel           -R 22222:localhost:22           -p 2222 bloster@51.254.131.217
