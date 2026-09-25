@@ -11,16 +11,10 @@ SQLITE3="/home/bloster/bin/sqlite3"
 export RESTIC_REPOSITORY RESTIC_PASSWORD_FILE
 
 LOGFILE="/tmp/backup-$(date +%Y%m%d).log"
-EMAIL="alexandre.francony05@gmail.com"
 BACKUP_OK=true
 
-# --- Email notification ---
-send_email() {
-  local subject="$1"
-  local body="$2"
-  printf "From: %s\nTo: %s\nSubject: %s\nContent-Type: text/plain; charset=UTF-8\n\n%s" \
-    "$EMAIL" "$EMAIL" "$subject" "$body" | msmtp "$EMAIL"
-}
+# notify(): Torgal (Discord), email as fallback
+. "$(dirname "$0")/notify.sh"
 
 # Redirect all output to logfile AND stdout
 exec > >(tee -a "$LOGFILE") 2>&1
@@ -110,7 +104,7 @@ echo "=========================================="
 echo "Backup completed: $TIMESTAMP_END"
 echo "=========================================="
 
-# --- Send notification email ---
+# --- Send notification ---
 if $BACKUP_OK; then
   SNAP_INFO=$($RESTIC snapshots --latest 1 2>&1 | tail -3)
   TOTAL_SIZE=$($RESTIC stats --mode raw-data --json 2>/dev/null | python3 -c '
@@ -128,14 +122,14 @@ Dernier snapshot:
 ${SNAP_INFO}
 
 ${TOTAL_SIZE}"
-  send_email "[OK] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
+  notify backup_ok false "[OK] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
 else
   BODY="Le backup a echoue !
 Date: $(date '+%Y-%m-%d %H:%M')
 
 Dernieres lignes du log:
 $(tail -50 "$LOGFILE")"
-  send_email "[FAIL] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
+  notify backup_failed true "[FAIL] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
 fi
 
 # Cleanup old logfiles (keep 7 days)

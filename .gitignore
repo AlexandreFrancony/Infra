@@ -27,3 +27,6 @@ venv/
 
 # Server-side backups of edited files
 *.bak-*
+
+# Notification endpoint with its Torgal hook token
+backup/notify.env

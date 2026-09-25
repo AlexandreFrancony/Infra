@@ -3,26 +3,29 @@ services:
     image: containrrr/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
+    env_file: .env
     environment:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_SCHEDULE=0 0 4 * * *
       - WATCHTOWER_LABEL_ENABLE=true
-      - WATCHTOWER_NOTIFICATIONS=email
-      - WATCHTOWER_NOTIFICATION_EMAIL_FROM=tipsy@francony.fr
-      - WATCHTOWER_NOTIFICATION_EMAIL_TO=alexandre.francony05@gmail.com
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=ssl0.ovh.net
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=587
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=tipsy@francony.fr
-      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=MozzartPonpon78??
-      - WATCHTOWER_NOTIFICATION_EMAIL_DELAY=2
+      # Update reports go to Torgal (URL with its hook token in .env, gitignored);
+      # the report template stays silent when nothing was updated or failed
+      - WATCHTOWER_NOTIFICATION_REPORT=true
       - DOCKER_API_VERSION=1.44
       - TZ=Europe/Paris
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    # proxy-network: reaches torgal:8080 without leaving the host
+    networks:
+      - proxy-network
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  proxy-network:
+    external: true

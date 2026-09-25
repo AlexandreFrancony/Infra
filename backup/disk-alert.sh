@@ -1,16 +1,10 @@
 #!/bin/bash
-# Disk space alert — sends email if usage exceeds threshold
+# Disk space alert — notifies (Torgal, email fallback) if usage exceeds threshold
 # Cron: 0 8 * * * /home/bloster/Hosting/Infra/backup/disk-alert.sh
 
 THRESHOLD=85
-EMAIL="alexandre.francony05@gmail.com"
 
-send_email() {
-  local subject="$1"
-  local body="$2"
-  printf "From: %s\nTo: %s\nSubject: %s\nContent-Type: text/plain; charset=UTF-8\n\n%s" \
-    "$EMAIL" "$EMAIL" "$subject" "$body" | msmtp "$EMAIL"
-}
+. "$(dirname "$0")/notify.sh"
 
 ALERT=""
 
@@ -27,6 +21,6 @@ while IFS= read -r line; do
 done < <(df -h / /mnt/hdd 2>/dev/null | tail -n +2)
 
 if [ -n "$ALERT" ]; then
-  send_email "[ALERTE] Disque ProDesk - espace faible" \
-    "Un ou plusieurs disques depassent ${THRESHOLD}% d'utilisation :\n\n${ALERT}\nVerifiez et liberez de l'espace."
+  notify disk_space true "[ALERTE] Disque ProDesk - espace faible" \
+    "$(printf '%b' "Un ou plusieurs disques depassent ${THRESHOLD}% d'utilisation :\n\n${ALERT}\nVerifiez et liberez de l'espace.")"
 fi
