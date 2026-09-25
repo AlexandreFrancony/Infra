@@ -122,7 +122,7 @@ Dernier snapshot:
 ${SNAP_INFO}
 
 ${TOTAL_SIZE}"
-  notify backup_ok false "[OK] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
+  notify backup_ok false "[OK] Backup ProDesk $(date +%Y-%m-%d)" "$BODY" backup_failed
 else
   BODY="Le backup a echoue !
 Date: $(date '+%Y-%m-%d %H:%M')

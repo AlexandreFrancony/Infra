@@ -12,11 +12,12 @@ send_email() {
     "$NOTIFY_EMAIL" "$1" "$2" | msmtp "$NOTIFY_EMAIL"
 }
 
-# notify <event> <severe: true|false> <subject> <body>
+# notify <event> <severe: true|false> <subject> <body> [<event this one resolves>]
 notify() {
   local payload
-  payload=$(jq -n --arg event "$1" --argjson severe "$2" --arg message "**$3**"$'\n'"$4" \
-    '{event: $event, severe: $severe, site: "prodesk", message: $message}')
+  payload=$(jq -n --arg event "$1" --argjson severe "$2" --arg message "**$3**"$'\n'"$4" --arg resolves "${5:-}" \
+    '{event: $event, severe: $severe, site: "prodesk", message: $message}
+     + (if $resolves != "" then {resolves: $resolves} else {} end)')
   if [ -n "$TORGAL_URL" ] && curl -sf -m 15 -X POST -H "Content-Type: application/json" \
        --data-binary "$payload" "$TORGAL_URL" > /dev/null; then
     return 0
