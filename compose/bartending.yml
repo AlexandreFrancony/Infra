@@ -15,6 +15,10 @@
 #   cd ~/Hosting/Infra
 #   docker compose -f compose/bartending.yml --env-file compose/bartending.env up -d
 
+# Explicit project name: bartending.yml and cof.yml share this directory, so compose would
+# otherwise name both projects "compose" and recreate one stack's containers as the other's.
+name: bartending
+
 services:
   # ============================================
   # BACKEND - Express.js API
