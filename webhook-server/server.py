@@ -517,17 +517,8 @@ def deploy():
         logger.info(f"Ignoring push to {branch} (allowed: {allowed_branches})")
         return jsonify({'message': f'Branch {branch} not configured for deployment'}), 200
 
-    # Check if already deploying
-    status_resp = status()
-    status_data = status_resp.get_json()
-
-    if status_data.get('deploying'):
-        logger.warning("Deployment already in progress")
-        return jsonify({
-            'status': 'busy',
-            'message': 'Another deployment is in progress',
-            'details': status_data
-        }), 503
+    # No busy check here: GitHub never retries a rejected webhook, so a push landing during
+    # another deployment would be lost. deploy.sh queues on its own lock instead.
 
     # Run deployment asynchronously
     def run_deployment():
