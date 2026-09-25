@@ -8,8 +8,8 @@ TORGAL_URL=""
 [ -f "$NOTIFY_DIR/notify.env" ] && . "$NOTIFY_DIR/notify.env"
 
 send_email() {
-  printf "From: %s\nTo: %s\nSubject: %s\nContent-Type: text/plain; charset=UTF-8\n\n%s" \
-    "$NOTIFY_EMAIL" "$NOTIFY_EMAIL" "$1" "$2" | msmtp "$NOTIFY_EMAIL"
+  printf "From: Torgal <torgal@francony.fr>\nTo: %s\nSubject: %s\nContent-Type: text/plain; charset=UTF-8\n\n%s" \
+    "$NOTIFY_EMAIL" "$1" "$2" | msmtp "$NOTIFY_EMAIL"
 }
 
 # notify <event> <severe: true|false> <subject> <body>
