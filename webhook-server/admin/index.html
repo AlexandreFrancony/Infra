@@ -362,25 +362,6 @@ header h1 span { color: var(--accent); }
     </div>
   </div>
 
-  <!-- Raspberry Pi 4 -->
-  <div class="section fade-in">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        <h2>Raspberry Pi 4</h2>
-        <span class="sub">OctoPrint + Calv-a-lot</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="section-badge" id="piBadge">…</span>
-        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-    <div class="section-body" id="piBody">
-      <div id="piStats">
-        <div class="stat-grid"><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-text"></div><div class="skeleton skel-value"></div></div></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Pi-hole -->
   <div class="section fade-in">
     <div class="section-header" onclick="toggleSection(this)">
@@ -513,8 +494,6 @@ function renderMediaApps() {
 var APPS = [
   { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
   { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading',      key: 'crypto' },
-{ name: 'Calv-a-lot',     icon: '📋', url: 'https://calv.francony.fr',      tag: 'copy-trade',   key: 'calv' },
-  { name: 'OctoPrint',      icon: '🖨️', url: 'https://octoprint.francony.fr', tag: '3d printer',   key: 'octoprint' },
   { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
   { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
   { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy',        key: 'pangolin' },
@@ -677,35 +656,6 @@ async function refreshProdesk() {
   }
 }
 
-// ─── Raspberry Pi ───────────────────────────────────
-async function refreshPi() {
-  var badge = document.getElementById('piBadge');
-  var data = await fetchJSON('/api/pi4');
-
-  if (!data) {
-    badge.textContent = 'Hors ligne';
-    badge.className = 'section-badge err';
-    document.getElementById('piStats').innerHTML = '<div class="offline-banner">Raspberry Pi 4 injoignable</div>';
-    return;
-  }
-
-  badge.textContent = 'En ligne';
-  badge.className = 'section-badge ok';
-
-  var memPct = data.memory && data.memory.total ? (data.memory.used / data.memory.total * 100) : 0;
-  var diskPct = data.disk && data.disk.total ? (data.disk.used / data.disk.total * 100) : 0;
-
-  var html = '<div class="stat-grid">' +
-    '<div><div class="stat-label">Température</div><div class="stat-value" style="color:' + tempColor(data.temperature) + '">' + (data.temperature != null ? data.temperature + '°C' : '—') + '</div></div>' +
-    '<div><div class="stat-label">Uptime</div><div class="stat-value">' + esc(data.uptime || '?') + '</div></div>' +
-  '</div>';
-  html += renderBar('CPU', data.cpu ? data.cpu.percent : 0);
-  html += renderBar('RAM', memPct, formatBytes(data.memory.used) + ' / ' + formatBytes(data.memory.total));
-  html += renderBar('Disque', diskPct, formatBytes(data.disk.used) + ' / ' + formatBytes(data.disk.total));
-
-  document.getElementById('piStats').innerHTML = html;
-}
-
 // ─── Pi-hole ────────────────────────────────────────
 async function refreshPihole() {
   var badge = document.getElementById('piholeBadge');
@@ -779,7 +729,7 @@ async function refreshDeploys() {
 async function refreshAll() {
   var dot = document.getElementById('refreshDot');
   dot.classList.add('active');
-  await Promise.all([refreshCashalot(), refreshProdesk(), refreshPi(), refreshPihole(), refreshDeploys(), checkApps()]);
+  await Promise.all([refreshCashalot(), refreshProdesk(), refreshPihole(), refreshDeploys(), checkApps()]);
   setTimeout(function() { dot.classList.remove('active'); }, 1000);
 }
 

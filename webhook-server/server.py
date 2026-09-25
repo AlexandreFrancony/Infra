@@ -239,9 +239,6 @@ def api_app_status():
     urls = {
         'tipsy': 'https://tipsy.francony.fr',
         'crypto': 'https://crypto.francony.fr',
-        'mtg': 'https://mtg.francony.fr',
-        'calv': 'https://calv.francony.fr',
-        'octoprint': 'https://octoprint.francony.fr',
         'vault': 'https://vault.francony.fr',
         'pihole': 'https://pihole.francony.fr',
         'pangolin': 'https://pangolin.francony.fr',
@@ -266,18 +263,6 @@ def api_app_status():
         t.join(timeout=6)
 
     return jsonify(results)
-
-
-@app.route('/api/pi4', methods=['GET'])
-def api_pi4():
-    """Raspberry Pi 4 stats via LAN"""
-    try:
-        req = urllib.request.Request('http://192.168.1.62:8080/api/host-stats', method='GET')
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return jsonify(json.loads(resp.read()))
-    except Exception as e:
-        logger.error(f"Pi 4 API error: {e}")
-        return jsonify({'error': str(e)}), 502
 
 
 # Pi-hole session cache (avoid re-auth every request → 429 rate limit)
