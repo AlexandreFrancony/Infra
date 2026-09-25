@@ -1,0 +1,7 @@
+# Torgal - Discord monitoring bot
+name: Torgal
+path: Torgal
+branch:
+  - main
+repos:
+  - Torgal
