@@ -36,6 +36,7 @@ services:
       - vaultwarden_network
       - homeassistant_network
       - triathlon_network
+      - cof_network
 
 networks:
   proxy-network:
@@ -61,4 +62,6 @@ networks:
   homeassistant_network:
     external: true
   triathlon_network:
+    external: true
+  cof_network:
     external: true

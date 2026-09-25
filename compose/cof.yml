@@ -1,0 +1,99 @@
+# COF (Site MJ) - Complete Stack
+# Deploy on ProDesk (HP ProDesk 400 G5)
+#
+# Traffic routed via Pangolin/Traefik on VPS through Newt tunnel
+# Database is hosted centrally in the Infra stack (postgres container)
+#
+# Structure on ProDesk:
+#   ~/Hosting/Infra/           <- Central database + this compose file
+#   ~/Hosting/COF/
+#   ├── COF_Back/
+#   └── COF_Front/
+#
+# Usage:
+#   cd ~/Hosting/Infra
+#   docker compose -f compose/cof.yml --env-file compose/cof.env up -d
+
+services:
+  # ============================================
+  # BACKEND - Express.js API
+  # ============================================
+  api:
+    build:
+      context: /home/bloster/Hosting/COF/COF_Back
+      dockerfile: Dockerfile
+    container_name: cof_api
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cof}:${POSTGRES_PASSWORD:?Database password required}@postgres:5432/${POSTGRES_DB:-cof}
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30d}
+      FRONTEND_URL: ${FRONTEND_URL:-https://jdr.francony.fr}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI}
+      UPLOADS_DIR: /app/uploads
+
+    volumes:
+      - cof_uploads:/app/uploads
+
+    expose:
+      - "3001"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 120s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # FRONTEND - React via Nginx (internal only)
+  # ============================================
+  frontend:
+    build:
+      context: /home/bloster/Hosting/COF/COF_Front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: cof_front
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    expose:
+      - "80"
+
+    depends_on:
+      - api
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  cof_uploads:
+
+networks:
+  default:
+    name: cof_network
+    driver: bridge

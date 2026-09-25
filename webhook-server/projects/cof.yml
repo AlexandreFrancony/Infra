@@ -1,0 +1,9 @@
+# COF - Deployment Configuration
+name: COF
+path: COF
+compose_file: /home/bloster/Hosting/Infra/compose/cof.yml
+branch:
+  - main
+repos:
+  - COF_Back
+  - COF_Front
