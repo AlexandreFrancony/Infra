@@ -21,15 +21,16 @@ Central database, auto-deployment webhook, and shared services for all *.francon
                  ┌─────────────────────────────────────────┐
                  │       HP ProDesk 400 G5 (Debian 13)     │
                  │  ┌─────────────────────────────────┐    │
-                 │  │     Docker Containers (9)        │    │
+                 │  │     Docker Containers           │    │
                  │  │                                  │    │
-                 │  │  ┌───────┐ ┌───┐ ┌──────────┐   │    │
-                 │  │  │ Tipsy │ │MTG│ │Cash-a-lot│   │    │
-                 │  │  └───────┘ └───┘ └──────────┘   │    │
+                 │  │  ┌───────┐ ┌─────┐ ┌─────────┐  │    │
+                 │  │  │ Tipsy │ │ COF │ │Triathlon│  │    │
+                 │  │  └───────┘ └─────┘ └─────────┘  │    │
                  │  │                                  │    │
-                 │  │  ┌──────────┐                    │    │
-                 │  │  │Calv-a-lot│ (copy-trading)     │    │
-                 │  │  └──────────┘                    │    │
+                 │  │  ┌────────┐ ┌──────────────────┐ │    │
+                 │  │  │ Torgal │ │ Nextcloud, Immich│ │    │
+                 │  │  └────────┘ │ Jellyfin, HA, …  │ │    │
+                 │  │             └──────────────────┘ │    │
                  │  │                                  │    │
                  │  │  ┌──────────┐ ┌────────┐        │    │
                  │  │  │ postgres │ │ webhook │        │    │
@@ -48,10 +49,20 @@ Central database, auto-deployment webhook, and shared services for all *.francon
 |--------|---------|-------------|
 | `admin.francony.fr` | Admin Dashboard | Central control panel with system stats |
 | `tipsy.francony.fr` | Tipsy | Cocktail ordering application |
-| `mtg.francony.fr` | MTG Collection | Magic card collection tracker |
-| `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot (Claude Haiku) |
+| `jdr.francony.fr` | COF | Game-master tool for Chroniques Oubliées Fantasy |
+| `tri.francony.fr` | Triathlon Dashboard | Training dashboard (Intervals.icu) |
+| `torgal.francony.fr` | Torgal | Discord monitoring bot — only `/hooks/<source>/<token>` and `/health` are exposed |
+| `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot — **suspended** since 2026-09-25 (Binance API key rejected), container stopped |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
-| `calv.francony.fr` | Calv-a-lot | Copy-trading follower for Cash-a-lot |
+
+### Retired services (history)
+
+| Domain | Service | Retired | Notes |
+|--------|---------|---------|-------|
+| `mtg.francony.fr` | MTG Collection | 2026 (deleted by Alexandre, DNS gone by 2026-09-25) | DB `mtg_collection` left in place in the central PostgreSQL; init script archived in `_archive/decommissioned-2026-09-25/` |
+| `calv.francony.fr` | Calv-a-lot (copy-trading follower) | deprecated, removed 2026-09-25 | ran on the Raspberry Pi 4; files archived in `~/Hosting/_archive/` on the ProDesk |
+| `octoprint.francony.fr` | OctoPrint (Ender 3) | deprecated, removed 2026-09-25 | ran on the Raspberry Pi 4 |
+| — | Raspberry Pi 4 (192.168.1.62) | decommissioned 2026-09-25 | hosted Calv-a-lot + OctoPrint; `/api/pi4` and its admin card removed |
 
 ## Admin Dashboard
 
@@ -60,7 +71,7 @@ The admin dashboard (`admin.francony.fr`) provides:
 - **System Monitoring**: CPU, RAM, Disk usage, Temperature
 - **Docker Status**: All containers with health status
 - **SSL Certificates**: Expiry tracking for all domains
-- **Quick Links**: Access to all services (Tipsy, MTG, Cash-a-lot)
+- **Quick Links**: Access to the web apps (Tipsy, Cash-a-lot, Vaultwarden, Pi-hole, Pangolin)
 
 ### API Endpoints
 
@@ -80,7 +91,6 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   │   ├── bartending.yml          # Bartending full stack (api + frontend)
 │   │   └── bartending.env          # Bartending environment variables
 │   ├── database/
-│   │   ├── 00-create-mtg-database.sh
 │   │   └── 01-create-cashalot-database.sh
 │   ├── newt/
 │   │   ├── docker-compose.yml      # Newt tunnel client (WireGuard → VPS)
@@ -95,16 +105,18 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   ├── Bartending_DB/
 │   ├── Bartending_Back/
 │   └── Bartending_Front/
-├── MTG-Collection/                 # MTG app (1 repo)
-├── Cash-a-lot/                     # AI crypto trading bot
-└── Calv-a-lot/                     # Copy-trading follower
+├── COF/                            # COF_Back + COF_Front (compose in Infra/compose/cof.yml)
+├── Triathlon-Dashboard/
+├── Torgal/                         # Discord monitoring bot
+├── Cash-a-lot/                     # AI crypto trading bot (suspended)
+└── _archive/                       # Retired projects (Calv-a-lot), still backed up
 ```
 
 ## Docker Stack
 
 | Service | Port (internal) | Network | Description |
 |---------|------|---------|-------------|
-| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending + mtg + cashalot) |
+| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending, cof, cashalot; mtg_collection kept from the retired MTG app) |
 | `webhook-server` | 9000 | proxy-network | GitHub webhook receiver + admin API |
 | `newt` | 2112 | all networks | WireGuard tunnel client to VPS (Pangolin) |
 
@@ -134,13 +146,17 @@ branch: [prod, main]
 repos: [Bartending_DB, Bartending_Back, Bartending_Front]
 ```
 
-**mtg.yml**
+**torgal.yml**
 ```yaml
-name: MTG-Collection
-path: MTG-Collection
-branch: [master, main]
-repos: [MTG-Collection]
+name: Torgal
+path: Torgal
+branch: [main]
+repos: [Torgal]
 ```
+
+> **Infra itself has no GitHub webhook, on purpose**: webhook-server cannot redeploy itself (it would kill
+> itself mid-deploy). Update it on the ProDesk with `git -C ~/Hosting/Infra pull --ff-only`; webhook-server
+> reloads its code on its own (watchfiles). Never edit tracked files directly on the server — commit them here.
 
 **cashalot.yml**
 ```yaml
@@ -148,14 +164,6 @@ name: Cash-a-lot
 path: Cash-a-lot
 branch: [main]
 repos: [Cash-a-lot]
-```
-
-**calvalot.yml**
-```yaml
-name: Calv-a-lot
-path: Calv-a-lot
-branch: [main]
-repos: [Calv-a-lot]
 ```
 
 **infra.yml**
@@ -202,9 +210,11 @@ git clone https://github.com/AlexandreFrancony/Bartending_Back.git
 git clone https://github.com/AlexandreFrancony/Bartending_Front.git
 cd ..
 
-git clone https://github.com/AlexandreFrancony/MTG-Collection.git
-git clone https://github.com/AlexandreFrancony/Cash-a-lot.git
-git clone https://github.com/AlexandreFrancony/Calv-a-lot.git
+mkdir -p COF && git clone https://github.com/AlexandreFrancony/COF_Back.git COF/COF_Back \
+  && git clone https://github.com/AlexandreFrancony/COF_Front.git COF/COF_Front
+git clone https://github.com/AlexandreFrancony/Triathlon-Dashboard.git
+git clone https://github.com/AlexandreFrancony/Torgal.git
+git clone https://github.com/AlexandreFrancony/Cash-a-lot.git   # suspended, keep stopped
 ```
 
 ### 3. Configure Environment
@@ -230,14 +240,11 @@ docker compose up -d
 cd ~/Hosting/Bartending/Bartending_Front
 docker compose up -d  # Creates bartending_network
 
-cd ~/Hosting/MTG-Collection
-docker compose up -d  # Creates mtg_network
-
 cd ~/Hosting/Cash-a-lot
-docker compose up -d  # Creates cashalot_network
+docker compose create  # Creates cashalot_network without starting the suspended bot
 
-cd ~/Hosting/Calv-a-lot
-docker compose up -d  # Creates calv-a-lot_default
+cd ~/Hosting/Infra
+docker compose -f compose/cof.yml --env-file compose/cof.env up -d  # Creates cof_network
 
 # 3. Start central infrastructure (connects to all networks)
 cd ~/Hosting/Infra
@@ -297,7 +304,7 @@ curl https://admin.francony.fr/api/docker
 curl -X POST https://webhook.francony.fr/deploy \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_WEBHOOK_SECRET" \
-  -d '{"ref":"refs/heads/main","repository":{"name":"MTG-Collection"},"pusher":{"name":"manual"}}'
+  -d '{"ref":"refs/heads/main","repository":{"name":"Torgal"},"pusher":{"name":"manual"}}'
 ```
 
 ## SSL Certificates
@@ -309,9 +316,11 @@ SSL is managed by **Traefik** (part of Pangolin) on the VPS. Certificates are au
 - [Bartending_Back](https://github.com/AlexandreFrancony/Bartending_Back) - Tipsy API (Express.js)
 - [Bartending_Front](https://github.com/AlexandreFrancony/Bartending_Front) - Tipsy frontend (React)
 - [Bartending_DB](https://github.com/AlexandreFrancony/Bartending_DB) - Tipsy database (PostgreSQL)
-- [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection) - MTG card tracker
-- [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot
-- [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot) - Copy-trading follower for Cash-a-lot
+- [COF_Back](https://github.com/AlexandreFrancony/COF_Back) / [COF_Front](https://github.com/AlexandreFrancony/COF_Front) - COF game-master tool
+- [Triathlon-Dashboard](https://github.com/AlexandreFrancony/Triathlon-Dashboard) - Training dashboard
+- [Torgal](https://github.com/AlexandreFrancony/Torgal) - Discord monitoring bot
+- [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot (suspended)
+- Archived: [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection), [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot)
 
 ## License
 

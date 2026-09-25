@@ -74,9 +74,8 @@ $RESTIC backup \
   /home/bloster/Hosting/Immich/docker-compose.yml \
   /home/bloster/Hosting/Nextcloud/docker-compose.yml \
   /home/bloster/Hosting/Nextcloud/.env \
-  /home/bloster/Hosting/Calv-a-lot/data/ \
   /home/bloster/Hosting/Bartending/ \
-  /home/bloster/Hosting/MTG-Collection/ \
+  /home/bloster/Hosting/_archive/ \
   --exclude="*/.git/*" \
   --exclude="*/node_modules/*" \
   --exclude="*/__pycache__/*" \
