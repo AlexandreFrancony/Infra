@@ -9,5 +9,4 @@ branch:
 repos:
   - Infra
 services:
-  - homarr
   - pihole
