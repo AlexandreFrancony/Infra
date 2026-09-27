@@ -31,7 +31,6 @@ services:
       - jellyfin_network
       - media_network
       - nextcloud_network
-      - plex_network
       - vaultwarden_network
       - homeassistant_network
       - triathlon_network
@@ -51,8 +50,6 @@ networks:
   media_network:
     external: true
   nextcloud_network:
-    external: true
-  plex_network:
     external: true
   vaultwarden_network:
     external: true
