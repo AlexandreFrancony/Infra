@@ -235,8 +235,7 @@ docker compose up -d
 cd ~/Hosting/Bartending/Bartending_Front
 docker compose up -d  # Creates bartending_network
 
-cd ~/Hosting/Cash-a-lot
-docker compose create  # Creates cashalot_network without starting the suspended bot
+docker network create cashalot_network  # Cash-a-lot is archived; its network stays until the cleanup
 
 cd ~/Hosting/Infra
 docker compose -f compose/cof.yml --env-file compose/cof.env up -d  # Creates cof_network
@@ -328,7 +327,7 @@ SSL is managed by **Traefik** (part of Pangolin) on the VPS. Certificates are au
 - [COF_Back](https://github.com/AlexandreFrancony/COF_Back) / [COF_Front](https://github.com/AlexandreFrancony/COF_Front) - COF game-master tool
 - [Triathlon-Dashboard](https://github.com/AlexandreFrancony/Triathlon-Dashboard) - Training dashboard
 - [Torgal](https://github.com/AlexandreFrancony/Torgal) - Discord monitoring bot
-- [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot (suspended)
+- [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot (archived 2026-09-28)
 - Archived: [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection), [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot)
 
 ## License
