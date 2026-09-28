@@ -26,7 +26,6 @@ services:
     networks:
       - proxy-network
       - bartending_network
-      - cashalot_network
       - immich_network
       - jellyfin_network
       - media_network
@@ -40,8 +39,6 @@ networks:
   proxy-network:
     external: true
   bartending_network:
-    external: true
-  cashalot_network:
     external: true
   immich_network:
     external: true

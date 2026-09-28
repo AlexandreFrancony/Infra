@@ -95,8 +95,6 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   ├── compose/
 │   │   ├── bartending.yml          # Bartending full stack (api + frontend)
 │   │   └── bartending.env          # Bartending environment variables
-│   ├── database/
-│   │   └── 01-create-cashalot-database.sh
 │   ├── newt/
 │   │   ├── docker-compose.yml      # Newt tunnel client (WireGuard → VPS)
 │   │   └── .env
@@ -120,7 +118,7 @@ The admin dashboard (`admin.francony.fr`) provides:
 
 | Service | Port (internal) | Network | Description |
 |---------|------|---------|-------------|
-| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending, cof; cashalot left from the archived Cash-a-lot until cleanup) |
+| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending, cof) |
 | `webhook-server` | 9000 | proxy-network | GitHub webhook receiver + admin API |
 | `newt` | 2112 | all networks | WireGuard tunnel client to VPS (Pangolin) |
 
@@ -235,7 +233,6 @@ docker compose up -d
 cd ~/Hosting/Bartending/Bartending_Front
 docker compose up -d  # Creates bartending_network
 
-docker network create cashalot_network  # Cash-a-lot is archived; its network stays until the cleanup
 
 cd ~/Hosting/Infra
 docker compose -f compose/cof.yml --env-file compose/cof.env up -d  # Creates cof_network

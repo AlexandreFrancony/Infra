@@ -15,7 +15,7 @@
 
 services:
   # ============================================
-  # POSTGRESQL - Central Database (bartending + cashalot)
+  # POSTGRESQL - Central Database (bartending + cof)
   # ============================================
   postgres:
     build:
@@ -29,10 +29,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bartender}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
       POSTGRES_DB: ${POSTGRES_DB:-bartending}
-      CASHALOT_DB_PASSWORD: ${CASHALOT_DB_PASSWORD:?Cash-a-lot database password required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/01-create-cashalot-database.sh:/docker-entrypoint-initdb.d/01-create-cashalot-database.sh:ro
     expose:
       - "5432"
     healthcheck:
@@ -49,7 +47,6 @@ services:
     networks:
       - proxy-network
       - bartending_network
-      - cashalot_network
 
   # ============================================
   # WEBHOOK SERVER - Auto-deployment (hot-reload via watchfiles)
@@ -84,7 +81,6 @@ services:
       - /mnt/hdd:/mnt/hdd:ro
     networks:
       - proxy-network
-      - cashalot_network
       - media_network
 
   # ============================================
@@ -124,8 +120,6 @@ networks:
     name: proxy-network
     driver: bridge
   bartending_network:
-    external: true
-  cashalot_network:
     external: true
   media_network:
     external: true
