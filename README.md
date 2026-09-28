@@ -87,6 +87,10 @@ The admin dashboard (`admin.francony.fr`) provides:
 ├── Infra/                          # This repo
 │   ├── admin/
 │   │   └── index.html              # Admin dashboard (static)
+│   ├── backup/
+│   │   ├── backup.sh               # Daily restic backup to the VPS (cron 03:00)
+│   │   ├── verify.sh               # Monthly restore test (cron 2nd, 04:30)
+│   │   └── notify.sh               # Reports to Torgal, email if Torgal is down
 │   ├── host/
 │   │   └── docker-dns.sh           # One-off host setup: pinned container DNS (sudo)
 │   ├── compose/
@@ -298,6 +302,14 @@ curl https://admin.francony.fr/api/system
 # Docker status
 curl https://admin.francony.fr/api/docker
 ```
+
+### Backups
+
+`backup/backup.sh` (cron 03:00) sends the databases' dumps, Vaultwarden and the configs to the VPS with restic.
+`backup/verify.sh` (cron on the 2nd at 04:30) proves they can be restored: `restic check` plus a different twelfth
+of the data read back each month (all of it over a year), then the latest snapshot's Vaultwarden database, PostgreSQL
+dumps and a config file restored into a temporary directory and checked. Both report to Torgal (`#journal`, or
+`#alertes` with a mention on failure). Run `backup/verify.sh` by hand any time: it never touches production.
 
 ### Container DNS
 
