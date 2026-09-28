@@ -47,6 +47,8 @@ services:
     networks:
       - proxy-network
       - bartending_network
+      # As I've Written (cof_api, compose/cof.yml): was attached by hand, lost on a recreate (2026-09-28)
+      - cof_network
 
   # ============================================
   # WEBHOOK SERVER - Auto-deployment (hot-reload via watchfiles)
@@ -120,6 +122,8 @@ networks:
     name: proxy-network
     driver: bridge
   bartending_network:
+    external: true
+  cof_network:
     external: true
   media_network:
     external: true
