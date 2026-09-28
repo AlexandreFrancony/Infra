@@ -52,7 +52,6 @@ Central database, auto-deployment webhook, and shared services for all *.francon
 | `jdr.francony.fr` | COF | Game-master tool for Chroniques Oubliées Fantasy |
 | `tri.francony.fr` | Triathlon Dashboard | Training dashboard (Intervals.icu) |
 | `torgal.francony.fr` | Torgal | Discord monitoring bot — only `/hooks/<source>/<token>` and `/health` are exposed |
-| `crypto.francony.fr` | Cash-a-lot | AI crypto trading bot — **suspended** since 2026-09-25 (Binance API key rejected), container stopped |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
 
 ### Retired services (history)
@@ -71,7 +70,7 @@ The admin dashboard (`admin.francony.fr`) provides:
 - **System Monitoring**: CPU, RAM, Disk usage, Temperature
 - **Docker Status**: All containers with health status
 - **SSL Certificates**: Expiry tracking for all domains
-- **Quick Links**: Access to the web apps (Tipsy, Cash-a-lot, Vaultwarden, Pi-hole, Pangolin)
+- **Quick Links**: Access to the web apps (Tipsy, Vaultwarden, Pi-hole, Pangolin)
 
 ### API Endpoints
 
@@ -114,15 +113,14 @@ The admin dashboard (`admin.francony.fr`) provides:
 ├── COF/                            # COF_Back + COF_Front (compose in Infra/compose/cof.yml)
 ├── Triathlon-Dashboard/
 ├── Torgal/                         # Discord monitoring bot
-├── Cash-a-lot/                     # AI crypto trading bot (suspended)
-└── _archive/                       # Retired projects (Calv-a-lot), still backed up
+└── _archive/                       # Retired projects (Calv-a-lot, Cash-a-lot + its DB dump), still backed up
 ```
 
 ## Docker Stack
 
 | Service | Port (internal) | Network | Description |
 |---------|------|---------|-------------|
-| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending, cof, cashalot; mtg_collection kept from the retired MTG app) |
+| `postgres` | 5432 | all app networks | Central PostgreSQL (bartending, cof; cashalot left from the archived Cash-a-lot until cleanup) |
 | `webhook-server` | 9000 | proxy-network | GitHub webhook receiver + admin API |
 | `newt` | 2112 | all networks | WireGuard tunnel client to VPS (Pangolin) |
 
@@ -163,14 +161,6 @@ repos: [Torgal]
 > **Infra itself has no GitHub webhook, on purpose**: webhook-server cannot redeploy itself (it would kill
 > itself mid-deploy). Update it on the ProDesk with `git -C ~/Hosting/Infra pull --ff-only`; webhook-server
 > reloads its code on its own (watchfiles). Never edit tracked files directly on the server — commit them here.
-
-**cashalot.yml**
-```yaml
-name: Cash-a-lot
-path: Cash-a-lot
-branch: [main]
-repos: [Cash-a-lot]
-```
 
 **infra.yml**
 ```yaml
@@ -220,7 +210,6 @@ mkdir -p COF && git clone https://github.com/AlexandreFrancony/COF_Back.git COF/
   && git clone https://github.com/AlexandreFrancony/COF_Front.git COF/COF_Front
 git clone https://github.com/AlexandreFrancony/Triathlon-Dashboard.git
 git clone https://github.com/AlexandreFrancony/Torgal.git
-git clone https://github.com/AlexandreFrancony/Cash-a-lot.git   # suspended, keep stopped
 ```
 
 ### 3. Configure Environment

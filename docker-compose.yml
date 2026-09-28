@@ -5,7 +5,7 @@
 #   ~/Hosting/
 #   ├── Infra/           <- this repo
 #   ├── Bartending/      <- Tipsy app
-#   └── Cash-a-lot/      <- Crypto trading bot
+#   └── _archive/        <- Retired projects (Cash-a-lot: archived 2026-09-28, its database kept until cleanup)
 #
 # Reverse proxy: Pangolin/Traefik on VPS (via Newt tunnel)
 #

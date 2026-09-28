@@ -209,37 +209,6 @@ header h1 span { color: var(--accent); }
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 
-/* Cash-a-lot widget */
-.cashalot-stats {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-  margin-top: 12px; text-align: center;
-}
-.cashalot-stat-num { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.cashalot-stat-label {
-  font-size: 0.6875rem; color: var(--text-muted); margin-top: 2px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.cashalot-trades { margin-top: 14px; }
-.cashalot-trade {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 0; border-top: 1px solid var(--border);
-  font-size: 0.8125rem;
-}
-.cashalot-trade:first-of-type { border-top: none; }
-.trade-action {
-  font-size: 0.625rem; font-weight: 700; padding: 2px 6px;
-  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
-}
-.trade-action.buy { background: rgba(22,163,74,0.1); color: var(--positive); }
-.trade-action.sell { background: rgba(220,38,38,0.1); color: var(--negative); }
-.trade-coin { font-weight: 600; }
-.trade-amount { color: var(--text-muted); margin-left: auto; font-variant-numeric: tabular-nums; }
-.trade-time { color: var(--text-muted); font-size: 0.6875rem; width: 60px; text-align: right; }
-.cashalot-cycle {
-  margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);
-  display: flex; align-items: center; gap: 6px;
-}
-
 /* Deployments */
 .deploy-row {
   display: flex; align-items: center; gap: 8px;
@@ -314,25 +283,6 @@ header h1 span { color: var(--accent); }
     </div>
     <div class="section-body open" id="mediaBody">
       <div class="apps-grid" id="mediaGrid" style="margin-top:12px"></div>
-    </div>
-  </div>
-
-  <!-- Cash-a-lot -->
-  <div class="section fade-in">
-    <div class="section-header open" onclick="toggleSection(this)">
-      <div class="section-title">
-        <h2>Cash-a-lot</h2>
-        <span class="sub" id="cashalotMode">Trading Bot</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="section-badge" id="cashalotBadge">...</span>
-        <svg class="section-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-    <div class="section-body open" id="cashalotBody">
-      <div id="cashalotStats">
-        <div class="cashalot-stats"><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div><div><div class="skeleton skel-value"></div></div></div>
-      </div>
     </div>
   </div>
 
@@ -493,7 +443,6 @@ function renderMediaApps() {
 
 var APPS = [
   { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
-  { name: 'Cash-a-lot',     icon: '📈', url: 'https://crypto.francony.fr',    tag: 'trading',      key: 'crypto' },
   { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
   { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
   { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy',        key: 'pangolin' },
@@ -544,60 +493,6 @@ function timeAgo(iso) {
   if (secs < 3600) return Math.floor(secs / 60) + 'min';
   if (secs < 86400) return Math.floor(secs / 3600) + 'h';
   return Math.floor(secs / 86400) + 'j';
-}
-
-// ─── Cash-a-lot ────────────────────────────────────
-async function refreshCashalot() {
-  var badge = document.getElementById('cashalotBadge');
-  var mode = document.getElementById('cashalotMode');
-  var data = await fetchJSON('/api/cashalot');
-
-  if (!data || data.error) {
-    badge.textContent = 'Hors ligne';
-    badge.className = 'section-badge err';
-    document.getElementById('cashalotStats').innerHTML = '<div class="offline-banner">Cash-a-lot injoignable</div>';
-    return;
-  }
-
-  // Badge
-  if (data.status === 'DEAD') { badge.textContent = 'Dead'; badge.className = 'section-badge err'; }
-  else if (data.bot_paused) { badge.textContent = 'En pause'; badge.className = 'section-badge'; }
-  else { badge.textContent = 'Actif'; badge.className = 'section-badge ok'; }
-
-  // Mode subtitle
-  mode.textContent = data.trading_mode === 'live' ? 'Live Trading' : 'Dry Run';
-
-  // Stats
-  var pnlColor = data.pnl_pct >= 0 ? 'var(--positive)' : 'var(--negative)';
-  var pnlSign = data.pnl_pct >= 0 ? '+' : '';
-  var html = '<div class="cashalot-stats">' +
-    '<div><div class="cashalot-stat-num">' + data.portfolio_eur.toFixed(2) + ' &euro;</div><div class="cashalot-stat-label">Portfolio</div></div>' +
-    '<div><div class="cashalot-stat-num" style="color:' + pnlColor + '">' + pnlSign + data.pnl_pct.toFixed(1) + '%</div><div class="cashalot-stat-label">P&amp;L</div></div>' +
-    '<div><div class="cashalot-stat-num">$' + data.ai_budget.toFixed(2) + '</div><div class="cashalot-stat-label">Budget IA</div></div>' +
-  '</div>';
-
-  // Trades
-  if (data.last_trades && data.last_trades.length > 0) {
-    html += '<div class="cashalot-trades">';
-    data.last_trades.forEach(function(t) {
-      var cls = t.action === 'BUY' ? 'buy' : 'sell';
-      html += '<div class="cashalot-trade">' +
-        '<span class="trade-action ' + cls + '">' + esc(t.action) + '</span>' +
-        '<span class="trade-coin">' + esc(t.coin) + '</span>' +
-        '<span class="trade-amount">' + parseFloat(t.amount).toFixed(2) + ' USDC</span>' +
-        '<span class="trade-time">' + timeAgo(t.time) + '</span>' +
-      '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Last cycle
-  html += '<div class="cashalot-cycle">' +
-    '<span>Dernier cycle : ' + esc(data.last_cycle) + '</span>' +
-    (data.last_cycle_time ? '<span>(' + timeAgo(data.last_cycle_time) + ')</span>' : '') +
-  '</div>';
-
-  document.getElementById('cashalotStats').innerHTML = html;
 }
 
 // ─── ProDesk ────────────────────────────────────────
@@ -729,7 +624,7 @@ async function refreshDeploys() {
 async function refreshAll() {
   var dot = document.getElementById('refreshDot');
   dot.classList.add('active');
-  await Promise.all([refreshCashalot(), refreshProdesk(), refreshPihole(), refreshDeploys(), checkApps()]);
+  await Promise.all([refreshProdesk(), refreshPihole(), refreshDeploys(), checkApps()]);
   setTimeout(function() { dot.classList.remove('active'); }, 1000);
 }
 

@@ -238,7 +238,6 @@ def api_app_status():
     """Check reachability + response time of all services (server-side, bypasses CORS)."""
     urls = {
         'tipsy': 'https://tipsy.francony.fr',
-        'crypto': 'https://crypto.francony.fr',
         'vault': 'https://vault.francony.fr',
         'pihole': 'https://pihole.francony.fr',
         'pangolin': 'https://pangolin.francony.fr',
@@ -316,67 +315,6 @@ def api_pihole():
         return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
 
-@app.route('/api/cashalot', methods=['GET'])
-def api_cashalot():
-    """Cash-a-lot summary via internal Docker network."""
-    base = 'http://cashalot:8080'
-    results = {}
-
-    def fetch(key, path):
-        try:
-            req = urllib.request.Request(f'{base}{path}', method='GET')
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                results[key] = json.loads(resp.read())
-        except Exception:
-            results[key] = None
-
-    threads = [
-        threading.Thread(target=fetch, args=('budget', '/api/budget')),
-        threading.Thread(target=fetch, args=('agent', '/api/agent/status')),
-        threading.Thread(target=fetch, args=('trades', '/api/trades?limit=3')),
-    ]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(timeout=6)
-
-    b = results.get('budget')
-    a = results.get('agent')
-    tr = results.get('trades')
-
-    if not b:
-        return jsonify({'error': 'Cash-a-lot unreachable'}), 502
-
-    total_eur = b.get('total_value_eur', 0)
-    deposited = b.get('total_deposited_eur', 0)
-    pnl_eur = total_eur - deposited if deposited else 0
-    pnl_pct = (pnl_eur / deposited * 100) if deposited else 0
-
-    last_trades = []
-    if tr:
-        for t in (tr if isinstance(tr, list) else []):
-            last_trades.append({
-                'coin': t.get('coin', '').replace('USDC', ''),
-                'action': t.get('action', ''),
-                'amount': t.get('amount_usdt', 0),
-                'time': t.get('created_at', ''),
-            })
-
-    return jsonify({
-        'portfolio_eur': round(total_eur, 2),
-        'portfolio_usdt': round(b.get('total_value_usdt', 0), 2),
-        'cash_usdt': round(b.get('cash_usdt', 0), 2),
-        'pnl_eur': round(pnl_eur, 2),
-        'pnl_pct': round(pnl_pct, 1),
-        'ai_budget': round(b.get('ai_budget_remaining', 0), 2),
-        'status': b.get('status', 'UNKNOWN'),
-        'bot_running': a.get('running', False) if a else False,
-        'bot_paused': a.get('paused', False) if a else False,
-        'trading_mode': a.get('trading_mode', '?') if a else '?',
-        'last_cycle': (a.get('last_cycle') or {}).get('status', '?') if a else '?',
-        'last_cycle_time': (a.get('last_cycle') or {}).get('timestamp', '') if a else '',
-        'last_trades': last_trades,
-    })
 
 
 @app.route('/api/deployments', methods=['GET'])
