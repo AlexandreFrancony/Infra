@@ -87,6 +87,8 @@ The admin dashboard (`admin.francony.fr`) provides:
 ├── Infra/                          # This repo
 │   ├── admin/
 │   │   └── index.html              # Admin dashboard (static)
+│   ├── host/
+│   │   └── docker-dns.sh           # One-off host setup: pinned container DNS (sudo)
 │   ├── compose/
 │   │   ├── bartending.yml          # Bartending full stack (api + frontend)
 │   │   └── bartending.env          # Bartending environment variables
@@ -296,6 +298,12 @@ curl https://admin.francony.fr/api/system
 # Docker status
 curl https://admin.francony.fr/api/docker
 ```
+
+### Container DNS
+
+Containers resolve through `1.1.1.1` / `8.8.8.8` set in `/etc/docker/daemon.json`, not through the host's
+`resolv.conf` (which Tailscale's MagicDNS used to own). Set up once with `sudo host/docker-dns.sh`: it restarts
+Docker (every container, ~1 min), turns MagicDNS off on the host, checks DNS and the sites, and rolls back on failure.
 
 ### Manual Deployment
 
