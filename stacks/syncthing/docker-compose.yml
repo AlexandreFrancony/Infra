@@ -17,6 +17,11 @@ services:
       - 22000:22000/udp  # Sync protocol
       - 21027:21027/udp  # Discovery
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8384/rest/noauth/health"]
       interval: 30s

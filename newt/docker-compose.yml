@@ -23,6 +23,11 @@ services:
       - PANGOLIN_ENDPOINT=${PANGOLIN_ENDPOINT:?Set PANGOLIN_ENDPOINT in .env}
       - NEWT_ID=${NEWT_ID:?Set NEWT_ID in .env}
       - NEWT_SECRET=${NEWT_SECRET:?Set NEWT_SECRET in .env}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - proxy-network
       - bartending_network

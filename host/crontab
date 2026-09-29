@@ -1,0 +1,18 @@
+# ProDesk crontab of bloster. Versioned here; install with `crontab ~/Hosting/Infra/host/crontab`.
+# Logs of the weekly jobs go to /tmp on purpose: only the last run matters.
+
+# Restic backup to the VPS (and Nextcloud's files to the USB disk), then Torgal report
+0 3 * * * /home/bloster/Hosting/Infra/backup/backup.sh >> /home/bloster/Hosting/Infra/backup/backup.log 2>&1
+# Monthly restore test of both repositories, 2nd at 04:30
+30 4 2 * * /home/bloster/Hosting/Infra/backup/verify.sh >> /home/bloster/Hosting/Infra/backup/verify.log 2>&1
+# Disk space alert
+0 8 * * * /home/bloster/Hosting/Infra/backup/disk-alert.sh
+# Nextcloud background tasks
+*/5 * * * * docker exec -u www-data nextcloud php -f /var/www/html/cron.php
+# rdtclient names a single-file download's folder differently from the file, which breaks Radarr/Sonarr imports
+*/2 * * * * /home/bloster/scripts/fix-rdtclient-folders.sh
+# Weekly Docker cleanup: images unused for 7 days, and the build cache (18 GB had piled up by 2026-09)
+0 5 * * 0 docker image prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
+15 5 * * 0 docker builder prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
+# Newt restart, weekly: clears a zombie process leak
+0 4 * * 0 docker restart newt >> /tmp/newt-restart.log 2>&1

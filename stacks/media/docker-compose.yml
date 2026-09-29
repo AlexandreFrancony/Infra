@@ -12,7 +12,9 @@ services:
       - PGID=1000
     volumes:
       - ./rdtclient/config:/data/db
-      - /home/bloster/downloads:/data/downloads
+      # Same disk as the library: Radarr/Sonarr imports are moves, not copies (a cross-disk copy left a film
+      # truncated in 2026-08). Same path in rdtclient, radarr and sonarr.
+      - /mnt/hdd/downloads:/data/downloads
       - /mnt/hdd/jellyfin-media:/data/jellyfin-media
       - /home/bloster/scripts:/home/bloster/scripts
     ports:
@@ -82,7 +84,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./sonarr/config:/config
-      - /home/bloster/downloads:/data/downloads
+      - /mnt/hdd/downloads:/data/downloads
       - /mnt/hdd/jellyfin-media:/data/jellyfin-media
     logging:
       driver: json-file
@@ -106,7 +108,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./radarr/config:/config
-      - /home/bloster/downloads:/data/downloads
+      - /mnt/hdd/downloads:/data/downloads
       - /mnt/hdd/jellyfin-media:/data/jellyfin-media
     logging:
       driver: json-file

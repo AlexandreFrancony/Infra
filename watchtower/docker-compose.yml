@@ -1,6 +1,7 @@
 services:
   watchtower:
-    image: containrrr/watchtower:latest
+    # containrrr/watchtower was archived in 2025-12; this fork is maintained and negotiates the Docker API version
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
     env_file: .env
@@ -11,7 +12,6 @@ services:
       # Update reports go to Torgal (URL with its hook token in .env, gitignored);
       # the report template stays silent when nothing was updated or failed
       - WATCHTOWER_NOTIFICATION_REPORT=true
-      - DOCKER_API_VERSION=1.44
       - TZ=Europe/Paris
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

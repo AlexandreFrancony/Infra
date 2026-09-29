@@ -3,6 +3,11 @@ services:
     image: alpine:latest
     container_name: ssh-tunnel
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     network_mode: host
     volumes:
       - /home/bloster/.ssh/id_tunnel:/root/.ssh/id_tunnel:ro

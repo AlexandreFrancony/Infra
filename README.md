@@ -301,6 +301,14 @@ database, PostgreSQL dumps and a config file restored into a temporary directory
 (`#journal`, or `#alertes` with a mention on failure). Run `backup/verify.sh` by hand any time: it never touches
 production.
 
+### Host setup
+
+- `host/crontab`: bloster's crontab (backups, cleanups, Nextcloud cron). Edit it here, then
+  `crontab ~/Hosting/Infra/host/crontab` on the ProDesk.
+- `host/setup-root.sh` (`sudo`, idempotent): caps the system journal at 500 MB and installs `smartd`, which tests the
+  SSD and the USB disk (short test daily, long one monthly) and posts problems to Torgal through `host/smart-alert.sh`.
+- `stacks/`: compose files of the third-party stacks (Media, Immich, Nextcloud…), symlinked from their folders.
+
 ### Container DNS
 
 Containers resolve through `1.1.1.1` / `8.8.8.8` set in `/etc/docker/daemon.json`, not through the host's

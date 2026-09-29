@@ -14,7 +14,8 @@ services:
   # IMMICH SERVER - API + Web UI
   # ============================================
   immich-server:
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    # Pinned: Immich releases sometimes need compose changes. Update by hand after reading the release notes.
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3.2.4}
     container_name: immich-server
     mem_limit: 2g
     labels:
@@ -56,7 +57,7 @@ services:
   # IMMICH MACHINE LEARNING - Face recognition & smart search
   # ============================================
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3.2.4}
     container_name: immich-machine-learning
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
