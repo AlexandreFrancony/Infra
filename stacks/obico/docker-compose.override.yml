@@ -1,0 +1,30 @@
+# Our settings on top of Obico's own compose. ~/Hosting/Obico is a clone of
+# https://github.com/TheSpaghettiDetective/obico-server (branch release: images are built there, from its sources),
+# and this file is symlinked there as docker-compose.override.yml, which compose merges automatically.
+# Obico watches the Ender 3's camera (OctoPrint on its Pi, LAN only) and pauses a failing print.
+# Update by hand: git pull in ~/Hosting/Obico, then docker compose up -d --build (not Watchtower: local builds).
+name: obico
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  ml_api:
+    container_name: obico-ml-api
+    mem_limit: 2g
+    logging: *logging
+  web:
+    container_name: obico-web
+    mem_limit: 1g
+    logging: *logging
+  tasks:
+    container_name: obico-tasks
+    mem_limit: 1g
+    logging: *logging
+  redis:
+    container_name: obico-redis
+    mem_limit: 256m
+    logging: *logging
