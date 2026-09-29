@@ -254,11 +254,14 @@ def api_app_status():
         try:
             req = urllib.request.Request(url, method='GET')
             with urllib.request.urlopen(req, timeout=5):
-                ms = round((time.time() - t0) * 1000)
-                results[name] = {'up': True, 'ms': ms}
+                up = True
+        except urllib.error.HTTPError as e:
+            # Same rule as Torgal: an answer below 500 means the site is up. Pangolin (1.23+) answers 401
+            # to non-browser requests on private resources instead of redirecting to its login page.
+            up = e.code < 500
         except Exception:
-            ms = round((time.time() - t0) * 1000)
-            results[name] = {'up': False, 'ms': ms}
+            up = False
+        results[name] = {'up': up, 'ms': round((time.time() - t0) * 1000)}
 
     threads = [threading.Thread(target=check, args=(n, u)) for n, u in urls.items()]
     for t in threads:
