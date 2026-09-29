@@ -1,0 +1,36 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    mem_limit: 2g
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    environment:
+      - TZ=Europe/Paris
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.francony.fr
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      - /mnt/hdd/jellyfin-media:/data
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "992"
+    networks:
+      - default
+      - media_network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    name: jellyfin_network
+    driver: bridge
+  media_network:
+    external: true

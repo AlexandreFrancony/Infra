@@ -16,6 +16,7 @@ DUMPS=(infra nextcloud immich)
 UNCHANGED_FILE=/home/bloster/Hosting/Infra/docker-compose.yml  # rarely edited: compared with its restored copy
 
 . "$(dirname "$0")/notify.sh"
+. "$(dirname "$0")/local-restic.sh"
 
 LOGFILE="/tmp/backup-verify-$(date +%Y%m).log"
 exec > >(tee -a "$LOGFILE") 2>&1
@@ -35,6 +36,21 @@ if $RESTIC check --read-data-subset="$SLICE"; then
   REPORT+=("Dépôt intègre, tranche $SLICE des données relue depuis le VPS")
 else
   fail "restic check en erreur (tranche $SLICE)"
+fi
+
+# 1b. Same for the local copy of Nextcloud's files on the USB disk
+if ! mountpoint -q /mnt/hdd; then
+  fail "disque USB non monté : copie locale Nextcloud introuvable"
+elif local_restic check --read-data-subset="$SLICE"; then
+  LOCAL_TIME=$(local_restic snapshots --latest 1 --json | jq -r '.[-1].time')
+  LOCAL_AGE_HOURS=$(( ($(date +%s) - $(date -d "$LOCAL_TIME" +%s)) / 3600 ))
+  if [ "$LOCAL_AGE_HOURS" -gt "$MAX_SNAPSHOT_AGE_HOURS" ]; then
+    fail "copie locale Nextcloud vieille de ${LOCAL_AGE_HOURS} h"
+  else
+    REPORT+=("Copie locale Nextcloud (disque USB) intègre, tranche $SLICE relue")
+  fi
+else
+  fail "restic check en erreur sur la copie locale Nextcloud"
 fi
 
 # 2. The latest snapshot is recent

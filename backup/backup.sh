@@ -47,6 +47,23 @@ echo "  - Nextcloud config..."
 docker cp nextcloud:/var/www/html/config/config.php /tmp/nextcloud-config.php
 echo "    Done"
 
+# Data that only lives inside containers or in root-owned files, copied out through Docker
+STAGE=/tmp/backup-stage
+rm -rf "$STAGE" && mkdir -m 700 "$STAGE"
+stage() {
+  echo "  - $1..."
+  if "${@:2}"; then echo "    Done"; else echo "    FAILED"; BACKUP_OK=false; fi
+}
+torgal_db() {
+  docker exec torgal python -c 'import sqlite3; sqlite3.connect("/data/torgal.db").backup(sqlite3.connect("/tmp/torgal-backup.db"))' \
+    && docker cp -q torgal:/tmp/torgal-backup.db "$STAGE/torgal.db" \
+    && docker exec torgal rm -f /tmp/torgal-backup.db
+}
+stage "Torgal SQLite" torgal_db
+stage "As I've Written uploads" docker cp -q cof_api:/app/uploads "$STAGE/cof-uploads"
+stage "Home Assistant config" docker cp -q homeassistant:/config "$STAGE/homeassistant-config"
+stage "Triathlon data" docker cp -q triathlon-backend:/data "$STAGE/triathlon-data"
+
 # --- Backup with Restic ---
 echo "[2/4] Running restic backup..."
 SECONDS=0
@@ -70,6 +87,15 @@ $RESTIC backup \
   /home/bloster/Hosting/Nextcloud/.env \
   /home/bloster/Hosting/Bartending/ \
   /home/bloster/Hosting/_archive/ \
+  "$STAGE/" \
+  /home/bloster/Hosting/Media/ \
+  /home/bloster/Hosting/Torgal/.env \
+  /home/bloster/Hosting/Triathlon-Dashboard/.env \
+  /home/bloster/Hosting/HomeAssistant/docker-compose.yml \
+  /home/bloster/Hosting/Syncthing/docker-compose.yml \
+  /home/bloster/Hosting/Vaultwarden/docker-compose.yml \
+  --exclude="/home/bloster/Hosting/Media/*/config/logs" \
+  --exclude="/home/bloster/Hosting/Media/*/config/MediaCover" \
   --exclude="*/.git/*" \
   --exclude="*/node_modules/*" \
   --exclude="*/__pycache__/*" \
@@ -87,8 +113,26 @@ else
   echo "Backup FAILED (exit code: $RESTIC_EXIT)"
 fi
 
+# --- Local copy on the USB disk: Nextcloud's files are too big for the VPS ---
+echo "[2b/4] Local copy of Nextcloud's files..."
+. "$(dirname "$0")/local-restic.sh"
+LOCAL_DOCKER_OPTS=(-v /home/bloster/Hosting/Nextcloud/data/userdata:/backup/nextcloud-data:ro
+                   -v /tmp/nextcloud-db-dump.sql:/backup/nextcloud-db-dump.sql:ro)
+LOCAL_INFO="Copie locale Nextcloud : ECHEC"
+if ! mountpoint -q /mnt/hdd; then
+  echo "USB disk not mounted, local copy skipped"
+  BACKUP_OK=false
+elif local_restic backup --host prodesk /backup --exclude "/backup/nextcloud-data/appdata_*/preview" \
+    && local_restic forget --host prodesk --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune; then
+  LOCAL_INFO="Copie locale Nextcloud (disque USB) : OK"
+else
+  BACKUP_OK=false
+fi
+echo "$LOCAL_INFO"
+
 # --- Cleanup dumps ---
 echo "[3/4] Cleaning up temporary dumps..."
+rm -rf "$STAGE"
 rm -f /tmp/immich-db-dump.sql /tmp/infra-db-dump.sql /tmp/vaultwarden-backup.sqlite3 /tmp/nextcloud-db-dump.sql /tmp/nextcloud-config.php
 
 # --- Retention policy ---

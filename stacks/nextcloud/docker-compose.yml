@@ -1,0 +1,117 @@
+# Nextcloud - Self-hosted productivity platform
+# Calendar, Contacts, Notes, Tasks
+#
+# Structure:
+#   ~/Hosting/Nextcloud/
+#   ├── docker-compose.yml  <- this file
+#   ├── .env                <- secrets & config
+#   └── data/
+#       ├── app/            <- Nextcloud application
+#       ├── userdata/       <- user data (calendars, contacts, notes)
+#       └── postgres/       <- database files
+
+services:
+  # ============================================
+  # NEXTCLOUD - Web UI + WebDAV
+  # ============================================
+  nextcloud:
+    image: nextcloud:stable-apache
+    container_name: nextcloud
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_HOST: nextcloud-postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS}
+      REDIS_HOST: nextcloud-redis
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      - ./data/app:/var/www/html
+      - ./data/userdata:/var/www/html/data
+      - /mnt/hdd/jellyfin-media:/mnt/jellyfin-media
+      - ./php-custom.ini:/usr/local/etc/php/conf.d/zzz-custom.ini:ro
+    depends_on:
+      nextcloud-redis:
+        condition: service_started
+      nextcloud-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/status.php || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - nextcloud_network
+
+  # ============================================
+  # REDIS - Session & file locking cache
+  # ============================================
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - nextcloud_network
+
+  # ============================================
+  # POSTGRESQL 16 - Dedicated DB for Nextcloud
+  # ============================================
+  nextcloud-postgres:
+    image: postgres:16-alpine
+    container_name: nextcloud-postgres
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - nextcloud_network
+
+networks:
+  nextcloud_network:
+    name: nextcloud_network
+    driver: bridge

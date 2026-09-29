@@ -1,0 +1,24 @@
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    hostname: prodesk
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./config:/var/syncthing/config
+      - /home/bloster:/var/syncthing/data
+    ports:
+      - 127.0.0.1:8384:8384   # Web UI
+      - 22000:22000/tcp  # Sync protocol
+      - 22000:22000/udp  # Sync protocol
+      - 21027:21027/udp  # Discovery
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8384/rest/noauth/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -290,11 +290,16 @@ curl https://admin.francony.fr/api/docker
 
 ### Backups
 
-`backup/backup.sh` (cron 03:00) sends the databases' dumps, Vaultwarden and the configs to the VPS with restic.
+`backup/backup.sh` (cron 03:00) sends the databases' dumps, Vaultwarden, the configs and the data that only lives
+inside containers (Torgal's SQLite, As I've Written uploads, Home Assistant, Triathlon, the media stack's settings) to
+the VPS with restic. Nextcloud's files (~40 GB, too big for the VPS) go to a second restic repository on the USB disk,
+`/mnt/hdd/backups/restic-local` (same password), written as root from a throwaway container (`backup/local-restic.sh`):
+it covers an SSD failure, not the loss of the whole machine.
 `backup/verify.sh` (cron on the 2nd at 04:30) proves they can be restored: `restic check` plus a different twelfth
-of the data read back each month (all of it over a year), then the latest snapshot's Vaultwarden database, PostgreSQL
-dumps and a config file restored into a temporary directory and checked. Both report to Torgal (`#journal`, or
-`#alertes` with a mention on failure). Run `backup/verify.sh` by hand any time: it never touches production.
+of the data read back each month (all of it over a year) on both repositories, then the latest snapshot's Vaultwarden
+database, PostgreSQL dumps and a config file restored into a temporary directory and checked. Both report to Torgal
+(`#journal`, or `#alertes` with a mention on failure). Run `backup/verify.sh` by hand any time: it never touches
+production.
 
 ### Container DNS
 
