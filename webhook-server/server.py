@@ -238,7 +238,12 @@ def api_app_status():
     """Check reachability + response time of all services (server-side, bypasses CORS)."""
     urls = {
         'tipsy': 'https://tipsy.francony.fr',
+        'jdr': 'https://jdr.francony.fr',
+        'tri': 'https://tri.francony.fr',
+        'cloud': 'https://cloud.francony.fr',
+        'home': 'https://home.francony.fr',
         'vault': 'https://vault.francony.fr',
+        'torgal': 'https://torgal.francony.fr/health',
         'pihole': 'https://pihole.francony.fr',
         'pangolin': 'https://pangolin.francony.fr',
     }

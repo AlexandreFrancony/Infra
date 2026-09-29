@@ -420,15 +420,17 @@ function toggleSection(el) {
 // ─── Apps ───────────────────────────────────────────
 var TS = 'http://100.71.179.2'; // Tailscale
 
+// Behind Pangolin since 2026-09-27 (host ports closed); rdtclient is the only one still reached through Tailscale
 var MEDIA_APPS = [
-  { name: 'Jellyfin',    icon: '🎬', url: 'https://jellyfin.francony.fr',  tag: 'media server' },
-  { name: 'Immich',      icon: '📷', url: 'https://immich.francony.fr',    tag: 'photos' },
-  { name: 'Jellyseerr', icon: '🔍', url: TS + ':32782',                    tag: 'requests' },
-  { name: 'Radarr',     icon: '🎥', url: TS + ':32785',                    tag: 'films' },
-  { name: 'Sonarr',     icon: '📺', url: TS + ':32783',                    tag: 'séries' },
-  { name: 'Prowlarr',   icon: '🔎', url: TS + ':32784',                    tag: 'indexers' },
-  { name: 'rdtclient',  icon: '⬇️', url: TS + ':6500',                     tag: 'real-debrid' },
-  { name: 'Metube',     icon: '▶️', url: TS + ':32780',                    tag: 'youtube dl' },
+  { name: 'Jellyfin',    icon: '🎬', url: 'https://jellyfin.francony.fr',   tag: 'media server' },
+  { name: 'Immich',      icon: '📷', url: 'https://immich.francony.fr',     tag: 'photos' },
+  { name: 'Jellyseerr', icon: '🔍', url: 'https://jellyseerr.francony.fr', tag: 'requests' },
+  { name: 'Radarr',     icon: '🎥', url: 'https://radarr.francony.fr',     tag: 'films' },
+  { name: 'Sonarr',     icon: '📺', url: 'https://sonarr.francony.fr',     tag: 'séries' },
+  { name: 'Bazarr',     icon: '💬', url: 'https://bazarr.francony.fr',     tag: 'sous-titres' },
+  { name: 'Prowlarr',   icon: '🔎', url: 'https://prowlarr.francony.fr',   tag: 'indexers' },
+  { name: 'Metube',     icon: '▶️', url: 'https://metube.francony.fr',     tag: 'youtube dl' },
+  { name: 'rdtclient',  icon: '⬇️', url: TS + ':6500',                     tag: 'real-debrid · tailscale' },
 ];
 
 function renderMediaApps() {
@@ -442,10 +444,15 @@ function renderMediaApps() {
 }
 
 var APPS = [
-  { name: 'Tipsy',          icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
-  { name: 'Vaultwarden',    icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
-  { name: 'Pi-hole',        icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
-  { name: 'Pangolin',       icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy',        key: 'pangolin' },
+  { name: 'Tipsy',            icon: '🍹', url: 'https://tipsy.francony.fr',     tag: 'cocktails',    key: 'tipsy' },
+  { name: "As I've Written",  icon: '🎲', url: 'https://jdr.francony.fr',       tag: 'jdr',          key: 'jdr' },
+  { name: 'Triathlon',        icon: '🏊', url: 'https://tri.francony.fr',       tag: 'entraînement', key: 'tri' },
+  { name: 'Nextcloud',        icon: '☁️', url: 'https://cloud.francony.fr',     tag: 'fichiers',     key: 'cloud' },
+  { name: 'Home Assistant',   icon: '🏠', url: 'https://home.francony.fr',      tag: 'jarvis',       key: 'home' },
+  { name: 'Vaultwarden',      icon: '🔐', url: 'https://vault.francony.fr',     tag: 'passwords',    key: 'vault' },
+  { name: 'Torgal',           icon: '🤖', url: 'https://discord.com/channels/1553024362926309547', tag: 'supervision', key: 'torgal' },
+  { name: 'Pi-hole',          icon: '🛡️', url: 'https://pihole.francony.fr',    tag: 'dns',          key: 'pihole' },
+  { name: 'Pangolin',         icon: '⚙️', url: 'https://pangolin.francony.fr',  tag: 'proxy',        key: 'pangolin' },
 ];
 
 function renderApps() {
