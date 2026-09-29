@@ -1,0 +1,32 @@
+# Spoolman: inventory of the Ender 3's filament spools. OctoPrint's Spoolman plugin (on the printer's Pi) deducts
+# what each print extrudes; Torgal reads the spools and alerts when the one in use runs low.
+# Web UI on the LAN: http://192.168.1.171:7912 (Tailscale: 100.71.179.2:7912).
+name: spoolman
+
+services:
+  spoolman:
+    image: ghcr.io/donkie/spoolman:latest
+    container_name: spoolman
+    restart: unless-stopped
+    mem_limit: 384m
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      # SQLite database (spoolman.db); the folder must belong to uid 1000 (bloster), the container's user
+      - ./data:/home/app/.local/share/spoolman
+    ports:
+      - "7912:8000"
+    # proxy-network: Torgal reaches it as spoolman:8000
+    networks:
+      - proxy-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy-network:
+    external: true

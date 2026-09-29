@@ -14,6 +14,7 @@ the relative paths (`./config`, `.env`) stay those of that folder, so moving the
 | `syncthing/` | `~/Hosting/Syncthing` | — |
 | `vaultwarden/` | `~/Hosting/Vaultwarden` | `.env` |
 | `obico/` | `~/Hosting/Obico` (clone of obico-server, only our `docker-compose.override.yml` here) | `.env` |
+| `spoolman/` | `~/Hosting/Spoolman` | — |
 
 Change a stack: edit here, commit, push, then on the ProDesk `cd ~/Hosting/Infra && git pull` and
 `cd ~/Hosting/<Stack> && docker compose up -d` (see the `prodesk-recreate` skill before recreating anything).
