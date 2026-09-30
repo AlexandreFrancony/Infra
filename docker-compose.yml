@@ -22,6 +22,9 @@ services:
       context: ../Bartending/Bartending_DB
       dockerfile: Dockerfile
     container_name: postgres
+    # Soft floor (cgroup memory.low): the kernel reclaims from containers above their floor first under host
+    # memory pressure. Nothing is pre-allocated; mem_limit stays the hard ceiling where one is set.
+    mem_reservation: 256m
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

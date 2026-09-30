@@ -2,6 +2,7 @@ services:
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
+    mem_reservation: 128m
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: unless-stopped
