@@ -99,6 +99,7 @@ services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
+    mem_reservation: 64m
     oom_score_adj: -500
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

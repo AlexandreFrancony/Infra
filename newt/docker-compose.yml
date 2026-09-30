@@ -12,6 +12,7 @@ services:
   newt:
     image: fosrl/newt
     container_name: newt
+    mem_reservation: 128m
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "--timeout=10", "--tries=1", "https://webhook.francony.fr/health"]
