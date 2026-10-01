@@ -10,8 +10,18 @@ services:
       - WATCHTOWER_SCHEDULE=0 0 4 * * *
       - WATCHTOWER_LABEL_ENABLE=true
       # Update reports go to Torgal (URL with its hook token in .env, gitignored);
-      # the report template stays silent when nothing was updated or failed
       - WATCHTOWER_NOTIFICATION_REPORT=true
+      # Only what changed: silent when nothing was updated or failed, and no line per fresh container
+      - |-
+        WATCHTOWER_NOTIFICATION_TEMPLATE={{- with .Report -}}{{- if (or .Updated .Failed) -}}
+        {{len .Scanned}} Scanned, {{len .Updated}} Updated, {{len .Restarted}} Restarted, {{len .Failed}} Failed, {{len .Fresh}} Fresh, {{len .Skipped}} Skipped
+        {{- range .Updated}}
+        * {{.Name}} — {{.ImageName}} ({{.CurrentImageID.ShortID}} → {{.LatestImageID.ShortID}})
+        {{- end}}
+        {{- range .Failed}}
+        * ❌ {{.Name}} — {{.ImageName}} : {{.Error}}
+        {{- end}}
+        {{- end -}}{{- end -}}
       - TZ=Europe/Paris
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
