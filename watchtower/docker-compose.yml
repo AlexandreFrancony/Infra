@@ -7,7 +7,8 @@ services:
     env_file: .env
     environment:
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      # 03:05, during the backup: restarted media containers rescan the HDD, which is awake then anyway
+      - WATCHTOWER_SCHEDULE=0 5 3 * * *
       - WATCHTOWER_LABEL_ENABLE=true
       # Update reports go to Torgal (URL with its hook token in .env, gitignored);
       - WATCHTOWER_NOTIFICATION_REPORT=true

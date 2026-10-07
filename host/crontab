@@ -14,5 +14,8 @@
 # Weekly Docker cleanup: images unused for 7 days, and the build cache (18 GB had piled up by 2026-09)
 0 5 * * 0 docker image prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
 15 5 * * 0 docker builder prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
+# Bazarr's subtitle searches, daytime only (the media disk sleeps from 23:00; see host/bazarr-task.sh)
+0 10,16,22 * * * /home/bloster/Hosting/Infra/host/bazarr-task.sh wanted_search_missing_subtitles_series wanted_search_missing_subtitles_movies >> /tmp/bazarr-task.log 2>&1
+0 13 * * * /home/bloster/Hosting/Infra/host/bazarr-task.sh upgrade_subtitles >> /tmp/bazarr-task.log 2>&1
 # Newt restart, weekly: clears a zombie process leak
 0 4 * * 0 docker restart newt >> /tmp/newt-restart.log 2>&1
