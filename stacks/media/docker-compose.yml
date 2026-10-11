@@ -117,8 +117,11 @@ services:
         max-file: "3"
 
   jellyseerr:
-    image: fallenbagel/jellyseerr:latest
+    # Seerr: successor of Jellyseerr (and Overseerr), migrates ./jellyseerr/config on first start. The old
+    # fallenbagel/jellyseerr image stopped at 2.7.3 (Aug 2025) and Jellyfin 12.2 rejects its auth (login 400, sync 401).
+    image: ghcr.io/seerr-team/seerr:latest
     container_name: jellyseerr
+    init: true
     mem_limit: 512m
     dns:
       - 1.1.1.1
@@ -128,10 +131,8 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
       - TZ=Europe/Paris
-      - PUID=1000
-      - PGID=1000
     volumes:
-      - ./jellyseerr/config:/app/config
+      - ./jellyseerr/config:/app/config   # owned by 1000:1000: Seerr runs as the image's node user
     logging:
       driver: json-file
       options:
