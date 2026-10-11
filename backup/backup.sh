@@ -63,6 +63,12 @@ stage "Torgal SQLite" torgal_db
 stage "As I've Written uploads" docker cp -q cof_api:/app/uploads "$STAGE/cof-uploads"
 stage "Home Assistant config" docker cp -q homeassistant:/config "$STAGE/homeassistant-config"
 stage "Triathlon data" docker cp -q triathlon-backend:/data "$STAGE/triathlon-data"
+obico_db() {
+  docker exec obico-web python -c 'import sqlite3; sqlite3.connect("/app/db.sqlite3").backup(sqlite3.connect("/tmp/obico-backup.db"))' \
+    && docker cp -q obico-web:/tmp/obico-backup.db "$STAGE/obico.db" \
+    && docker exec obico-web rm -f /tmp/obico-backup.db
+}
+stage "Obico SQLite" obico_db
 
 # --- Backup with Restic ---
 echo "[2/4] Running restic backup..."
