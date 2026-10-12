@@ -89,6 +89,18 @@ def verify_signature(f):
     return decorated_function
 
 
+# webhook.francony.fr is public (no Pangolin auth) so GitHub can reach it: only the signed webhook endpoints
+# and the health check answer there. The dashboard and its APIs stay on admin.francony.fr and the Docker network.
+PUBLIC_HOST = 'webhook.francony.fr'
+PUBLIC_PATHS = {'/deploy', '/health', '/projects', '/reload-config'}
+
+
+@app.before_request
+def restrict_public_host():
+    if request.host.split(':')[0] == PUBLIC_HOST and request.path not in PUBLIC_PATHS:
+        return jsonify({'error': 'Not found'}), 404
+
+
 # ============================================
 # ADMIN DASHBOARD
 # ============================================
