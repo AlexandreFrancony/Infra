@@ -131,6 +131,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
       - TZ=Europe/Paris
+      - LOG_LEVEL=info   # the image defaults to debug: a log line per Sonarr/Radarr poll
     volumes:
       - ./jellyseerr/config:/app/config   # owned by 1000:1000: Seerr runs as the image's node user
     logging:
@@ -139,7 +140,10 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Rarely used (13 videos, last on 2026-09-27): only started on demand, `docker compose up -d metube`
+  # (the profile keeps it out of a plain `up -d`; downloads stay in /mnt/hdd/jellyfin-media/youtube)
   metube:
+    profiles: ["occasionnel"]
     image: alexta69/metube:latest
     container_name: metube
     mem_limit: 512m

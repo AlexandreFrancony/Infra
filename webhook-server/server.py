@@ -251,12 +251,12 @@ def api_app_status():
     urls = {
         'tipsy': 'https://tipsy.francony.fr',
         'jdr': 'https://jdr.francony.fr',
-        'tri': 'https://tri.francony.fr',
+        'admin': 'https://admin.francony.fr',
         'cloud': 'https://cloud.francony.fr',
         'home': 'https://home.francony.fr',
         'vault': 'https://vault.francony.fr',
         'torgal': 'https://torgal.francony.fr/health',
-        'pihole': 'https://pihole.francony.fr',
+        'pihole': 'http://pihole/admin/',  # no public address since 2026-10-13, reached on proxy-network
         'pangolin': 'https://pangolin.francony.fr',
     }
     results = {}
