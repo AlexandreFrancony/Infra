@@ -107,6 +107,7 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
+      - "127.0.0.1:8081:80"   # admin page, through `ssh prodesk-apps` (no public address since 2026-10-13)
     expose:
       - "80"
     environment:

@@ -54,6 +54,8 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:9696:9696"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
@@ -76,6 +78,8 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8989:8989"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
@@ -100,6 +104,9 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     restart: unless-stopped
+    # No public address since 2026-10-13: reachable from the ProDesk itself only, through `ssh prodesk-apps`
+    ports:
+      - "127.0.0.1:7878:7878"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
@@ -148,6 +155,8 @@ services:
     container_name: metube
     mem_limit: 512m
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8081"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
@@ -172,6 +181,8 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:6767:6767"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
