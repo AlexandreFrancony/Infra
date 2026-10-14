@@ -1,0 +1,5 @@
+name: Hideaway
+path: Hideaway
+branch: [main]
+# The repo was Triathlon-Dashboard until 2026-10-14: GitHub may still send that name
+repos: [Hideaway, Triathlon-Dashboard]

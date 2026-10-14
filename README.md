@@ -50,7 +50,7 @@ Central database, auto-deployment webhook, and shared services for all *.francon
 | `admin.francony.fr` | Admin Dashboard | Central control panel with system stats |
 | `tipsy.francony.fr` | Tipsy | Cocktail ordering application |
 | `jdr.francony.fr` | COF | Game-master tool for Chroniques Oubliées Fantasy |
-| `tri.francony.fr` | Triathlon Dashboard | Training dashboard (Intervals.icu) |
+| `admin.francony.fr` | Hideaway | Personal site: today, second brain, sport, infra (`tri.francony.fr` redirects here) |
 | `torgal.francony.fr` | Torgal | Discord monitoring bot — only `/hooks/<source>/<token>` and `/health` are exposed |
 | `webhook.francony.fr` | Webhook Server | GitHub webhook receiver for auto-deploy |
 
@@ -109,7 +109,7 @@ The admin dashboard (`admin.francony.fr`) provides:
 │   ├── Bartending_Back/
 │   └── Bartending_Front/
 ├── COF/                            # COF_Back + COF_Front (compose in Infra/compose/cof.yml)
-├── Triathlon-Dashboard/
+├── Hideaway/
 ├── Torgal/                         # Discord monitoring bot
 └── _archive/                       # Retired projects (Calv-a-lot, Cash-a-lot + its DB dump), still backed up
 ```
@@ -206,7 +206,7 @@ cd ..
 
 mkdir -p COF && git clone https://github.com/AlexandreFrancony/COF_Back.git COF/COF_Back \
   && git clone https://github.com/AlexandreFrancony/COF_Front.git COF/COF_Front
-git clone https://github.com/AlexandreFrancony/Triathlon-Dashboard.git
+git clone https://github.com/AlexandreFrancony/Hideaway.git
 git clone https://github.com/AlexandreFrancony/Torgal.git
 ```
 
@@ -335,7 +335,7 @@ SSL is managed by **Traefik** (part of Pangolin) on the VPS. Certificates are au
 - [Bartending_Front](https://github.com/AlexandreFrancony/Bartending_Front) - Tipsy frontend (React)
 - [Bartending_DB](https://github.com/AlexandreFrancony/Bartending_DB) - Tipsy database (PostgreSQL)
 - [COF_Back](https://github.com/AlexandreFrancony/COF_Back) / [COF_Front](https://github.com/AlexandreFrancony/COF_Front) - COF game-master tool
-- [Triathlon-Dashboard](https://github.com/AlexandreFrancony/Triathlon-Dashboard) - Training dashboard
+- [Hideaway](https://github.com/AlexandreFrancony/Hideaway) - Personal site (admin.francony.fr)
 - [Torgal](https://github.com/AlexandreFrancony/Torgal) - Discord monitoring bot
 - [Cash-a-lot](https://github.com/AlexandreFrancony/Cash-a-lot) - AI crypto trading bot (archived 2026-09-28)
 - Archived: [MTG-Collection](https://github.com/AlexandreFrancony/MTG-Collection), [Calv-a-lot](https://github.com/AlexandreFrancony/Calv-a-lot)
