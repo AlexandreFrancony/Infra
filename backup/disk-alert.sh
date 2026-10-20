@@ -18,15 +18,14 @@ while IFS= read -r line; do
   avail=$(echo "$line" | awk '{print $4}')
 
   if [ "$usage" -ge "$THRESHOLD" ]; then
-    ALERT="${ALERT}${mount} : ${usage}% utilise (${used}/${size}, ${avail} dispo)\n"
+    ALERT="${ALERT}${mount} : ${usage} % utilisés (${used} sur ${size}, ${avail} libres)\n"
   fi
 done < <(df -h / /mnt/hdd 2>/dev/null | tail -n +2)
 
 if [ -n "$ALERT" ]; then
-  notify disk_space true "[ALERTE] Disque ProDesk - espace faible" \
-    "$(printf '%b' "Un ou plusieurs disques depassent ${THRESHOLD}% d'utilisation :\n\n${ALERT}\nVerifiez et liberez de l'espace.")"
+  notify disk_space true "Disque presque plein" "$(printf '%b' "${ALERT}Libère de la place.")"
   mkdir -p "$(dirname "$STATE_FILE")" && touch "$STATE_FILE"
 elif [ -f "$STATE_FILE" ]; then
-  notify disk_space_ok false "[OK] Disque ProDesk" "Tous les disques sont repasses sous ${THRESHOLD}%." disk_space \
+  notify disk_space_ok false "Place disque retrouvée" "Tous les disques sont repassés sous ${THRESHOLD} %." disk_space \
     && rm -f "$STATE_FILE"
 fi

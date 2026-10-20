@@ -156,30 +156,13 @@ echo "=========================================="
 
 # --- Send notification ---
 if $BACKUP_OK; then
-  SNAP_INFO=$($RESTIC snapshots --latest 1 2>&1 | tail -3)
-  TOTAL_SIZE=$($RESTIC stats --mode raw-data --json 2>/dev/null | python3 -c '
-import sys, json
-d = json.load(sys.stdin)
-size_gb = d.get("total_size", 0) / (1024**3)
-count = d.get("total_file_count", 0)
-print("Total: %.2f GB, %d fichiers" % (size_gb, count))
-' 2>/dev/null || echo "Stats non disponibles")
-  BODY="Backup termine avec succes.
-Duree: ${DURATION}s
-Date: $(date '+%Y-%m-%d %H:%M')
-
-Dernier snapshot:
-${SNAP_INFO}
-
-${TOTAL_SIZE}"
-  notify backup_ok false "[OK] Backup ProDesk $(date +%Y-%m-%d)" "$BODY" backup_failed
+  KEPT=$($RESTIC stats --mode raw-data --json 2>/dev/null | python3 -c '
+import json, sys
+print(("dépôt de %.1f Go sur le VPS" % (json.load(sys.stdin)["total_size"] / 1024**3)).replace(".", ","))
+' 2>/dev/null || echo "taille du dépôt indisponible")
+  notify backup_ok false "Sauvegarde de la nuit réussie" "En ${DURATION} s · ${KEPT}" backup_failed
 else
-  BODY="Le backup a echoue !
-Date: $(date '+%Y-%m-%d %H:%M')
-
-Dernieres lignes du log:
-$(tail -50 "$LOGFILE")"
-  notify backup_failed true "[FAIL] Backup ProDesk $(date +%Y-%m-%d)" "$BODY"
+  notify backup_failed true "Sauvegarde de la nuit ratée" "Fin du journal :"$'\n```\n'"$(tail -15 "$LOGFILE")"$'\n```'
 fi
 
 # Cleanup old logfiles (keep 7 days)

@@ -102,10 +102,10 @@ echo "=== Restore test finished in ${DURATION}s: ${#PROBLEMS[@]} problem(s) ==="
 
 SUMMARY="Instantané $LATEST_ID ($(date -d "$LATEST_TIME" '+%d/%m %H:%M')), vérifié en $((DURATION / 60)) min."
 if [ ${#PROBLEMS[@]} -eq 0 ]; then
-  notify backup_verify_ok false "[OK] Test de restauration ProDesk $(date +%m/%Y)" \
+  notify backup_verify_ok false "Test de restauration du mois réussi" \
     "$SUMMARY"$'\n'"$(printf -- '- %s\n' "${REPORT[@]}")" backup_verify_failed
 else
-  notify backup_verify_failed true "[FAIL] Test de restauration ProDesk $(date +%m/%Y)" \
+  notify backup_verify_failed true "Test de restauration du mois raté" \
     "$SUMMARY"$'\n'"$(printf -- '- %s\n' "${PROBLEMS[@]}")"$'\n'"Journal : $LOGFILE"
 fi
 
