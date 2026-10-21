@@ -587,6 +587,154 @@ def reload_config():
     })
 
 
+# ============================================
+# MEDIA IMPORT TRACK TRIMMING - Radarr/Sonarr "On Import"/"On Upgrade" webhook
+# Keeps only the original-language + English + French audio tracks, and English/French
+# (or forced) subtitle tracks, so Jellyfin's track picker isn't full of unwanted languages.
+# ============================================
+
+LANGUAGE_TO_ISO = {
+    'english': 'eng', 'french': 'fre', 'italian': 'ita', 'spanish': 'spa', 'german': 'ger',
+    'japanese': 'jpn', 'korean': 'kor', 'chinese': 'chi', 'portuguese': 'por', 'russian': 'rus',
+    'dutch': 'dut', 'swedish': 'swe', 'danish': 'dan', 'norwegian': 'nor', 'finnish': 'fin',
+    'polish': 'pol', 'turkish': 'tur', 'hindi': 'hin', 'arabic': 'ara',
+}
+LANG_EQUIVALENTS = {'eng': {'eng', 'en'}, 'fre': {'fre', 'fra', 'fr'}}
+
+
+def _normalize_lang(code):
+    code = (code or '').lower()
+    for canonical, variants in LANG_EQUIVALENTS.items():
+        if code in variants:
+            return canonical
+    return code
+
+
+def _ffprobe_streams(path):
+    result = subprocess.run(
+        ['ffprobe', '-v', 'error', '-show_entries',
+         'stream=index,codec_type:stream_tags=language:stream_disposition=forced',
+         '-of', 'json', path],
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"ffprobe failed: {result.stderr[:300]}")
+    return json.loads(result.stdout)['streams']
+
+
+def _lang_of(s):
+    return _normalize_lang(s.get('tags', {}).get('language'))
+
+
+def _is_forced(s):
+    return bool(s.get('disposition', {}).get('forced'))
+
+
+def select_tracks(audio: list, subs: list, original_code: str | None) -> tuple:
+    """Pure selection logic: which audio/subtitle streams to keep. Audio: original language
+    (if known) + English + French. Subtitles: English + French, plus any forced track
+    regardless of language (it's meant to always display, e.g. alien-language dialogue).
+
+    Safety net: a category filtered down to nothing is more likely a tagging problem (cf. the
+    Spider-Man release with its English audio mislabeled) than a real absence - keep everything
+    in that category instead of guessing wrong."""
+    wanted_audio = {c for c in (original_code, 'eng', 'fre') if c}
+    keep_audio = [s for s in audio if _lang_of(s) in wanted_audio]
+    keep_subs = [s for s in subs if _lang_of(s) in {'eng', 'fre'} or _is_forced(s)]
+
+    if not keep_audio:
+        keep_audio = audio
+    if subs and not keep_subs:
+        keep_subs = subs
+    return keep_audio, keep_subs
+
+
+def trim_media_tracks(path: str, original_language_name: str) -> dict:
+    """Remux in place, keeping only wanted audio/subtitle tracks. Never touches video."""
+    if not os.path.isfile(path):
+        return {'skipped': True, 'reason': 'file not found'}
+
+    original_code = LANGUAGE_TO_ISO.get((original_language_name or '').lower())
+    streams = _ffprobe_streams(path)
+    audio = [s for s in streams if s['codec_type'] == 'audio']
+    subs = [s for s in streams if s['codec_type'] == 'subtitle']
+    keep_audio, keep_subs = select_tracks(audio, subs, original_code)
+
+    if len(keep_audio) == len(audio) and len(keep_subs) == len(subs):
+        return {'skipped': True, 'reason': 'already clean', 'audio': len(audio), 'subs': len(subs)}
+
+    tmp_path = f"{path}.trimmed.mkv"
+    cmd = ['ffmpeg', '-y', '-i', path, '-map', '0:v']
+    for s in keep_audio:
+        cmd += ['-map', f"0:{s['index']}"]
+    for s in keep_subs:
+        cmd += ['-map', f"0:{s['index']}"]
+    cmd += ['-c', 'copy', tmp_path]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr[-500:])
+
+        original_size = os.path.getsize(path)
+        new_size = os.path.getsize(tmp_path)
+        if new_size < original_size * 0.4:
+            raise RuntimeError(f"résultat suspect ({new_size} vs {original_size} octets)")
+
+        os.replace(tmp_path, path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+
+    return {
+        'trimmed': True,
+        'audio_kept': [_lang_of(s) or '?' for s in keep_audio],
+        'audio_dropped': len(audio) - len(keep_audio),
+        'subs_kept': [_lang_of(s) or ('forced' if _is_forced(s) else '?') for s in keep_subs],
+        'subs_dropped': len(subs) - len(keep_subs),
+    }
+
+
+def _container_path_to_host(path: str) -> str:
+    # Radarr/Sonarr see the library at /data/jellyfin-media; webhook-server mounts the same
+    # tree writable at /mnt/hdd/jellyfin-media (unlike the rest of the read-only /mnt/hdd)
+    prefix = '/data/jellyfin-media'
+    return '/mnt/hdd/jellyfin-media' + path[len(prefix):] if path.startswith(prefix) else path
+
+
+def _handle_import_webhook(media_key: str, file_key: str, lang_source_key: str):
+    payload = request.get_json(silent=True) or {}
+    event = payload.get('eventType')
+    if event == 'Test':
+        return jsonify({'ok': True}), 200
+    if event != 'Download':
+        return jsonify({'skipped': True, 'reason': f'eventType={event}'}), 200
+
+    path = _container_path_to_host((payload.get(file_key) or {}).get('path', ''))
+    if not path:
+        return jsonify({'skipped': True, 'reason': 'no path in payload'}), 200
+
+    lang_name = ((payload.get(lang_source_key) or {}).get('originalLanguage') or {}).get('name')
+    try:
+        result = trim_media_tracks(path, lang_name)
+        logger.info(f"{media_key} trim {path}: {result}")
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"{media_key} trim failed for {path}: {e}")
+        return jsonify({'error': str(e)}), 200  # 200: don't make Radarr/Sonarr retry or alert
+
+
+@app.route('/api/radarr-import', methods=['POST'])
+def radarr_import_webhook():
+    return _handle_import_webhook('radarr', 'movieFile', 'movie')
+
+
+@app.route('/api/sonarr-import', methods=['POST'])
+def sonarr_import_webhook():
+    return _handle_import_webhook('sonarr', 'episodeFile', 'series')
+
+
 if __name__ == '__main__':
     logger.info(f"Starting webhook server")
     logger.info(f"Hosting directory: {HOSTING_DIR}")

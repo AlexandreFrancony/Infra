@@ -2,11 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install git and docker CLI (for deployment)
+# Install git and docker CLI (for deployment), ffmpeg (for the import track-trimming webhook)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     openssh-client \
+    ffmpeg \
     && curl -fsSL https://get.docker.com | sh \
     && rm -rf /var/lib/apt/lists/*
 
