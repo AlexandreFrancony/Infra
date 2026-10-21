@@ -340,7 +340,8 @@ def _already_have_it(name: str, item: dict) -> bool:
     failing is then just noise, not something to alert on."""
     if name == 'sonarr':
         return bool(item.get('episodeHasFile'))
-    return bool(item.get('movie', {}).get('hasFile'))
+    # Radarr's embedded movie object has no hasFile field: movieFileId is the signal
+    return bool(item.get('movie', {}).get('movieFileId'))
 
 
 @app.route('/api/arr-queue', methods=['GET'])
