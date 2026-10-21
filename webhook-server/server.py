@@ -339,7 +339,7 @@ def api_pihole():
 def api_arr_queue():
     """Sonarr/Radarr queue items stuck with an error (e.g. dead or takedown-purged torrent)."""
     apps = [('sonarr', 8989, 'SONARR_API_KEY'), ('radarr', 7878, 'RADARR_API_KEY')]
-    stuck = []
+    stuck = {}  # (app, title) -> error: a season/movie pack has one queue row per file, same title
     for name, port, key_env in apps:
         key = os.environ.get(key_env, '')
         if not key:
@@ -351,14 +351,11 @@ def api_arr_queue():
                 data = json.loads(resp.read())
             for item in data.get('records', []):
                 if item.get('status') == 'warning' and item.get('errorMessage'):
-                    stuck.append({
-                        'app': name,
-                        'title': item.get('title', '?'),
-                        'error': item['errorMessage'],
-                    })
+                    stuck[(name, item.get('title', '?'))] = item['errorMessage']
         except Exception as e:
             logger.error(f"{name} queue check failed: {e}")
-    return jsonify({'stuck': stuck})
+    return jsonify({'stuck': [{'app': app, 'title': title, 'error': error}
+                               for (app, title), error in stuck.items()]})
 
 
 @app.route('/api/deployments', methods=['GET'])
