@@ -335,6 +335,30 @@ def api_pihole():
         return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
 
+@app.route('/api/arr-queue', methods=['GET'])
+def api_arr_queue():
+    """Sonarr/Radarr queue items stuck with an error (e.g. dead or takedown-purged torrent)."""
+    apps = [('sonarr', 8989, 'SONARR_API_KEY'), ('radarr', 7878, 'RADARR_API_KEY')]
+    stuck = []
+    for name, port, key_env in apps:
+        key = os.environ.get(key_env, '')
+        if not key:
+            continue
+        try:
+            req = urllib.request.Request(f'http://{name}:{port}/api/v3/queue?pageSize=250')
+            req.add_header('X-Api-Key', key)
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            for item in data.get('records', []):
+                if item.get('status') == 'warning' and item.get('errorMessage'):
+                    stuck.append({
+                        'app': name,
+                        'title': item.get('title', '?'),
+                        'error': item['errorMessage'],
+                    })
+        except Exception as e:
+            logger.error(f"{name} queue check failed: {e}")
+    return jsonify({'stuck': stuck})
 
 
 @app.route('/api/deployments', methods=['GET'])

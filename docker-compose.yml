@@ -72,6 +72,8 @@ services:
     environment:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
       PIHOLE_PASSWORD: ${PIHOLE_PASSWORD:?Pi-hole password required}
+      SONARR_API_KEY: ${SONARR_API_KEY:-}
+      RADARR_API_KEY: ${RADARR_API_KEY:-}
       HOSTING_DIR: /home/bloster/Hosting
       PORT: 9000
     volumes:
