@@ -335,22 +335,31 @@ def api_pihole():
         return jsonify({'queries': 0, 'blocked': 0, 'percent': 0, 'status': 'error'})
 
 
+def _already_have_it(name: str, item: dict) -> bool:
+    """True if another download already satisfied this episode/movie: a parallel attempt
+    failing is then just noise, not something to alert on."""
+    if name == 'sonarr':
+        return bool(item.get('episodeHasFile'))
+    return bool(item.get('movie', {}).get('hasFile'))
+
+
 @app.route('/api/arr-queue', methods=['GET'])
 def api_arr_queue():
-    """Sonarr/Radarr queue items stuck with an error (e.g. dead or takedown-purged torrent)."""
-    apps = [('sonarr', 8989, 'SONARR_API_KEY'), ('radarr', 7878, 'RADARR_API_KEY')]
+    """Sonarr/Radarr queue items stuck with an error (e.g. dead or takedown-purged torrent),
+    excluding ones where the episode/movie already has a file from another successful attempt."""
+    apps = [('sonarr', 8989, 'SONARR_API_KEY', 'includeEpisode'), ('radarr', 7878, 'RADARR_API_KEY', 'includeMovie')]
     stuck = {}  # (app, title) -> error: a season/movie pack has one queue row per file, same title
-    for name, port, key_env in apps:
+    for name, port, key_env, include_param in apps:
         key = os.environ.get(key_env, '')
         if not key:
             continue
         try:
-            req = urllib.request.Request(f'http://{name}:{port}/api/v3/queue?pageSize=250')
+            req = urllib.request.Request(f'http://{name}:{port}/api/v3/queue?pageSize=250&{include_param}=true')
             req.add_header('X-Api-Key', key)
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read())
             for item in data.get('records', []):
-                if item.get('status') == 'warning' and item.get('errorMessage'):
+                if item.get('status') == 'warning' and item.get('errorMessage') and not _already_have_it(name, item):
                     stuck[(name, item.get('title', '?'))] = item['errorMessage']
         except Exception as e:
             logger.error(f"{name} queue check failed: {e}")
