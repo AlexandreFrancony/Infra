@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lets Torgal (Home Assistant) shut the ProDesk down cleanly on a voice command, idempotent:
+# Lets Torgal (Home Assistant) act on the ProDesk by voice (shutdown, backup, restart a few apps), idempotent:
 # `bash ~/Hosting/Infra/host/setup-ha-power.sh` as bloster (asks for the sudo password once).
 # - an SSH key kept in HA's config, allowed only from HA's Docker network and only to run ha-power.sh;
 # - a sudo rule for exactly `shutdown -h +1` and `shutdown -c`, nothing else.
