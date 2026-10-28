@@ -11,6 +11,10 @@
 */5 * * * * docker exec -u www-data nextcloud php -f /var/www/html/cron.php
 # rdtclient names a single-file download's folder differently from the file, which breaks Radarr/Sonarr imports
 */2 * * * * /home/bloster/scripts/fix-rdtclient-folders.sh
+# Sonarr/Radarr queue noise, daily (script kept in ~/scripts, written on 2026-10-21)
+0 5 * * * python3 /home/bloster/scripts/clean_arr_queue.py >> /home/bloster/scripts/clean_arr_queue.log 2>&1
+# Downloads that can't be imported: their import retries every minute kept the media disk awake all night
+20 * * * * python3 /home/bloster/Hosting/Infra/host/arr_unimportable.py >> /home/bloster/scripts/arr_unimportable.log 2>&1
 # Weekly Docker cleanup: images unused for 7 days, and the build cache (18 GB had piled up by 2026-09)
 0 5 * * 0 docker image prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
 15 5 * * 0 docker builder prune -af --filter "until=168h" >> /tmp/docker-prune.log 2>&1
