@@ -41,6 +41,7 @@ services:
       - homeassistant_network
       - triathlon_network
       - cof_network
+      - mariage_network
 
 networks:
   proxy-network:
@@ -62,4 +63,6 @@ networks:
   triathlon_network:
     external: true
   cof_network:
+    external: true
+  mariage_network:
     external: true
