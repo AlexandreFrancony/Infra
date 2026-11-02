@@ -10,7 +10,8 @@
 
 services:
   newt:
-    image: fosrl/newt
+    # Pinned: upgraded together with Pangolin on the VPS (no Watchtower label on purpose)
+    image: fosrl/newt:1.19.0
     container_name: newt
     mem_reservation: 128m
     restart: unless-stopped
