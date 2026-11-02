@@ -36,7 +36,7 @@ def prune() -> None:
     keep = routed_hosts()
     with open(ACME, encoding='utf-8') as f:
         data = json.load(f)
-    backup = f'{ACME}.bak-{time.strftime("%Y%m%d-%H%M")}'
+    backup = f'/home/bloster/backups/acme.json.bak-{time.strftime("%Y%m%d-%H%M")}'
     shutil.copy2(ACME, backup)
     for resolver in data.values():
         certs = resolver.get('Certificates') or []
