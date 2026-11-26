@@ -87,7 +87,7 @@ services:
       - webhook_logs:/var/log/infra
       - /mnt/hdd:/mnt/hdd:ro
       # Writable override, just for the import track-trimming webhook (remux in place)
-      - /mnt/hdd/jellyfin-media:/mnt/hdd/jellyfin-media
+      - /mnt/hdd/data/jellyfin-media:/mnt/hdd/data/jellyfin-media
     logging:
       driver: json-file
       options:

@@ -12,10 +12,9 @@ services:
       - PGID=1000
     volumes:
       - ./rdtclient/config:/data/db
-      # Same disk as the library: Radarr/Sonarr imports are moves, not copies (a cross-disk copy left a film
-      # truncated in 2026-08). Same path in rdtclient, radarr and sonarr.
-      - /mnt/hdd/downloads:/data/downloads
-      - /mnt/hdd/jellyfin-media:/data/jellyfin-media
+      # One mount for downloads and library: two separate binds are two mount points, so every import was a
+      # full copy + delete (EXDEV, found 2026-11-26), never a move or hardlink. Same path in rdtclient, radarr, sonarr.
+      - /mnt/hdd/data:/data
       - /home/bloster/scripts:/home/bloster/scripts
     ports:
       - "6500:6500"
@@ -88,8 +87,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./sonarr/config:/config
-      - /mnt/hdd/downloads:/data/downloads
-      - /mnt/hdd/jellyfin-media:/data/jellyfin-media
+      - /mnt/hdd/data:/data
     logging:
       driver: json-file
       options:
@@ -115,8 +113,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./radarr/config:/config
-      - /mnt/hdd/downloads:/data/downloads
-      - /mnt/hdd/jellyfin-media:/data/jellyfin-media
+      - /mnt/hdd/data:/data
     logging:
       driver: json-file
       options:
@@ -148,7 +145,7 @@ services:
         max-file: "3"
 
   # Rarely used (13 videos, last on 2026-09-27): only started on demand, `docker compose up -d metube`
-  # (the profile keeps it out of a plain `up -d`; downloads stay in /mnt/hdd/jellyfin-media/youtube)
+  # (the profile keeps it out of a plain `up -d`; downloads stay in /mnt/hdd/data/jellyfin-media/youtube)
   metube:
     profiles: ["occasionnel"]
     image: alexta69/metube:latest
@@ -166,7 +163,7 @@ services:
       - YTDL_OPTIONS={"format":"bestvideo[vcodec^=avc1][height<=1080]+bestaudio[acodec^=mp4a]/best[height<=1080]","writethumbnail":true,"postprocessors":[{"key":"FFmpegThumbnailsConvertor","format":"jpg"}]}
       - DOWNLOAD_DIR=/downloads
     volumes:
-      - /mnt/hdd/jellyfin-media/youtube:/downloads
+      - /mnt/hdd/data/jellyfin-media/youtube:/downloads
     logging:
       driver: json-file
       options:
@@ -192,7 +189,7 @@ services:
     volumes:
       - ./bazarr/config:/config
       # Same path as in Sonarr/Radarr: no path mapping to configure
-      - /mnt/hdd/jellyfin-media:/data/jellyfin-media
+      - /mnt/hdd/data/jellyfin-media:/data/jellyfin-media
     # No host port: reached through Pangolin (newt is on media_network)
     logging:
       driver: json-file

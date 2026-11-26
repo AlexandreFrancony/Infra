@@ -35,7 +35,7 @@ services:
     volumes:
       - ./data/app:/var/www/html
       - ./data/userdata:/var/www/html/data
-      - /mnt/hdd/jellyfin-media:/mnt/jellyfin-media
+      - /mnt/hdd/data/jellyfin-media:/mnt/jellyfin-media
       - ./php-custom.ini:/usr/local/etc/php/conf.d/zzz-custom.ini:ro
     depends_on:
       nextcloud-redis:

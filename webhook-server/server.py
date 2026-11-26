@@ -705,9 +705,9 @@ def trim_media_tracks(path: str, original_language_name: str) -> dict:
 
 def _container_path_to_host(path: str) -> str:
     # Radarr/Sonarr see the library at /data/jellyfin-media; webhook-server mounts the same
-    # tree writable at /mnt/hdd/jellyfin-media (unlike the rest of the read-only /mnt/hdd)
+    # tree writable at /mnt/hdd/data/jellyfin-media (unlike the rest of the read-only /mnt/hdd)
     prefix = '/data/jellyfin-media'
-    return '/mnt/hdd/jellyfin-media' + path[len(prefix):] if path.startswith(prefix) else path
+    return '/mnt/hdd/data/jellyfin-media' + path[len(prefix):] if path.startswith(prefix) else path
 
 
 def _handle_import_webhook(media_key: str, file_key: str, lang_source_key: str):
