@@ -344,12 +344,19 @@ def _already_have_it(name: str, item: dict) -> bool:
     return bool(item.get('movie', {}).get('movieFileId'))
 
 
+def _queue_label(name: str, item: dict) -> str:
+    """Series or movie title: Sonarr retries a failed episode with the next release, so keying
+    alerts by release title posted one Discord message per attempt."""
+    media = item.get('series' if name == 'sonarr' else 'movie') or {}
+    return media.get('title') or item.get('title', '?')
+
+
 @app.route('/api/arr-queue', methods=['GET'])
 def api_arr_queue():
     """Sonarr/Radarr queue items stuck with an error (e.g. dead or takedown-purged torrent),
     excluding ones where the episode/movie already has a file from another successful attempt."""
-    apps = [('sonarr', 8989, 'SONARR_API_KEY', 'includeEpisode'), ('radarr', 7878, 'RADARR_API_KEY', 'includeMovie')]
-    stuck = {}  # (app, title) -> error: a season/movie pack has one queue row per file, same title
+    apps = [('sonarr', 8989, 'SONARR_API_KEY', 'includeEpisode=true&includeSeries'), ('radarr', 7878, 'RADARR_API_KEY', 'includeMovie')]
+    stuck = {}  # (app, series/movie title) -> error: one alert however many releases or files fail
     for name, port, key_env, include_param in apps:
         key = os.environ.get(key_env, '')
         if not key:
@@ -361,7 +368,7 @@ def api_arr_queue():
                 data = json.loads(resp.read())
             for item in data.get('records', []):
                 if item.get('status') == 'warning' and item.get('errorMessage') and not _already_have_it(name, item):
-                    stuck[(name, item.get('title', '?'))] = item['errorMessage']
+                    stuck[(name, _queue_label(name, item))] = item['errorMessage']
         except Exception as e:
             logger.error(f"{name} queue check failed: {e}")
     return jsonify({'stuck': [{'app': app, 'title': title, 'error': error}
