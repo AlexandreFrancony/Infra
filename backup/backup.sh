@@ -100,11 +100,13 @@ $RESTIC backup \
   /home/bloster/Hosting/HomeAssistant/docker-compose.yml \
   /home/bloster/Hosting/Syncthing/docker-compose.yml \
   /home/bloster/Hosting/Vaultwarden/docker-compose.yml \
+  /home/bloster/Hosting/OpenWebUI/ \
   --exclude="/home/bloster/Hosting/Media/*/config/logs" \
   --exclude="/home/bloster/Hosting/Media/*/config/MediaCover" \
   --exclude="*/.git/*" \
   --exclude="*/node_modules/*" \
   --exclude="*/__pycache__/*" \
+  --exclude="/home/bloster/Hosting/OpenWebUI/data/cache" \
   --exclude="*.pyc"
 RESTIC_EXIT=$?
 set -e
